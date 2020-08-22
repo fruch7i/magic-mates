@@ -1,0 +1,124 @@
+#:import Factory kivy.factory.Factory
+
+<PlayingField>:
+	size_hint: None, None
+	size: 550, 550
+	canvas:
+		Color:
+			rgba: 0.5, 0.5, 0.5, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<Menu>:
+	orientation: 'vertical'
+	size_hint: None, None
+	size: 250, 550
+	canvas:
+		Color:
+			rgba: 0.1, 0.1, 0.1, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<InfoPopup>:
+	title: 'Character information'
+	BoxLayout:
+		orientation: 'vertical'
+		Label:
+			text: root.health_label
+		Label:
+			text: root.mana_label
+		Label:
+			text: root.time_label
+		Label:
+			text: root.dmg_label
+		Label:
+			text: root.buff_label
+		Label:
+			text: root.abil_label
+		Button:
+			text: 'BACK'
+			on_release: root.dismiss()
+
+<Character>:
+	size_hint: None, None
+	size: 45, 45
+	on_release: self.show_details_popup()
+	canvas:
+		Color:
+			rgba: 1, 0, 0, 1
+		Rectangle:
+			pos: (self.pos[0], self.pos[1] + 40)
+			size: (self.size[0] * self.health / self.max_health, 5)
+		Color:
+			rgba: 0, 0, 1, 1
+		Rectangle:
+			pos: (self.pos[0], self.pos[1] + 35)
+			size: (self.size[0] * self.mana / self.max_mana, 5)
+		Color:
+			rgba: 1, 1, 1, 1
+		Rectangle:
+			pos: (self.pos[0], self.pos[1] + 30)
+			size: (self.size[0] * self.t / self.max_t, 5)
+
+<MovePrompt>:
+	size_hint: None, None
+	size: 45, 20
+	on_release: self.move_character()
+
+<AttackPrompt>:
+	size_hint: None, None
+	size: 15, 15
+	on_release: self.attack_character()
+	canvas:
+		Color:
+			rgba: 1, 0, 0, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<AbilityPrompt>:
+	text: self.text
+	on_release: self.execute_ability()
+
+<ChooseTargetPrompt>:
+	size_hint: None, None
+	size: 15, 15
+	on_release: self.execute_ability()
+	canvas:
+		Color:
+			rgba: 0, 0, 1, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<EmptyFieldPrompt>:
+	size_hint: None, None
+	size: 30, 30
+	on_release: self.execute_ability()
+	canvas:
+		Color:
+			rgba: 0, 0.6, 0.6, 1
+		Rectangle:
+			pos: self.pos
+			size: self.size
+
+<BasicLayout>:
+	orientation: 'horizontal'
+
+<MaMaGame>:
+	orientation: 'vertical'
+	Label:
+		text: str(root.t)
+	BasicLayout:
+		PlayingField:
+			id: id_playing_field
+			Character:
+				pos: 50, 50
+			Character:
+				pos: 100, 100
+			Character:
+				pos: 200, 200
+		Menu:
+			id: id_menu
