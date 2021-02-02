@@ -8,14 +8,15 @@ from kivy.properties import ObjectProperty, NumericProperty, BoundedNumericPrope
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.factory import Factory
-from random import randint, random
-from numpy import sqrt, infty
+
+import random
+import numpy as np
 
 # this global parameter is used to switch back and forth between the two possible states of the game, deciding upon a move (False), or running (True)
 game_is_running = True
 
 def distance(x, y):
-    return sqrt( (x[0]-y[0])**2 + (x[1]-y[1])**2)
+    return np.sqrt( (x[0]-y[0])**2 + (x[1]-y[1])**2)
 
 class Buff(Widget):
     ''' a Widget that stores the behaviour of buffs, can be applied to characters '''
@@ -56,14 +57,14 @@ class Buff(Widget):
             else:
                 self.stacks -= 1
             self.parent.t = self.parent.max_t - 1
-            self.parent.change_health( -0.75 * random() * self.parent.max_t )
+            self.parent.change_health( -0.75 * random.random() * self.parent.max_t )
 
         elif self.buff_type == 'poison':
             self.t += 300
             self.stacks = 1
 
         elif self.buff_type == 'freeze':
-            self.t = infty
+            self.t = np.infty
             self.value = 10
             self.parent.t = self.parent.t / 2
             self.parent.max_t += self.value
@@ -77,7 +78,7 @@ class Buff(Widget):
                 self.parent.mana = 0
 
         else: # this applies to enrage, survivor, freeze, burn and manaburn blade
-            self.t = infty
+            self.t = np.infty
 
     def remove_buff(self):
         if self.buff_type == 'freeze':
@@ -148,18 +149,18 @@ class Ability(object):
         self.abil_type = abil_type
         self.exists = True
         abil_dict = {'pass': [0, None],
-            'freeze': [20, infty],
-            'electrocute': [30, infty],
-            'burn': [30, infty],
-            'manaburn': [10, infty],
-            'poison': [20, infty],
-            'debuff': [20, infty],
+            'freeze': [20, np.infty],
+            'electrocute': [30, np.infty],
+            'burn': [30, np.infty],
+            'manaburn': [10, np.infty],
+            'poison': [20, np.infty],
+            'debuff': [20, np.infty],
             'teleport': [30, None],
             'quick attack': [20, 80],
             'triple attack': [50, 80],
             'attack all': [40, 80],
-            'enrage': [30, infty],
-            'survivor': [80, infty],
+            'enrage': [30, np.infty],
+            'survivor': [80, np.infty],
             'create ghost': [80, None],
             'freeze blade': [50, 80],
             'burn blade': [50, 80],
@@ -183,11 +184,13 @@ class Character(Button):
 
     base_dmg = 30
 
+    #team = random.choose([0,1])
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.health = self.max_health
         self.mana = self.max_mana
-        self.t = randint(0,99)
+        self.t = random.randint(0,99)
         
         self.buff_dict = {
             'burn': Buff('burn'),
@@ -329,7 +332,7 @@ class Character(Button):
                 menu.remove_widget(child)
 
         # removing all AttackPrompt and ChooseTargetPrompt widgets here
-        targets = self.find_neighbours(infty)
+        targets = self.find_neighbours(np.infty)
         for target in targets:
             for child in target.children[:]:
                 if type(child) is AttackPrompt:
