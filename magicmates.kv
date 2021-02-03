@@ -1,0 +1,54 @@
+<PlayingField>:
+
+<BasicBoxLayout>:
+
+<AbilityPrompt>:
+	Button:
+		on_release: root.ap_on_release()
+		text: root.ability
+
+<SelectButton>:
+	pos_hint: {'x':0.25, 'y':0.25}
+	size_hint: (0.5, 0.5)
+	on_release: self.sb_on_release()
+
+<EmptyField>:
+	Button:
+		on_release: root.ef_on_release()
+
+<Mate>:
+	on_release: self.ma_on_release()
+	canvas:
+		Color:
+			rgba: 1, 0, 0, 1
+		Rectangle:
+			pos: (self.x, self.y + self.height - 5)
+			size: (self.size[0] * self.health / self.max_health, 5)
+		Color:
+			rgba: 0, 0, 1, 1
+		Rectangle:
+			pos: (self.x, self.y + self.height - 10)
+			size: (self.size[0] * self.mana / self.max_mana, 5)
+		Color:
+			rgba: 1, 1, 1, 1
+		Rectangle:
+			pos: (self.x, self.y + self.height - 15)
+			size: (self.size[0] * self.t / self.max_t, 5)
+
+<MagicMatesGame>:
+	orientation: 'vertical'
+	Label:
+		text: 'header'
+		size_hint: None, None
+		size: 700, 30
+	BasicBoxLayout:
+		orientation: 'horizontal'
+		PlayingField:
+			id: playing_field
+			size_hint: None, None
+			size: 700, 700
+		AbilityMenu:
+			id: ability_menu
+			orientation: 'vertical'
+			Label:
+				text: 'menu header'
