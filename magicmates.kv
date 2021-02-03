@@ -17,7 +17,6 @@
 		on_release: root.ef_on_release()
 
 <Mate>:
-	on_release: self.ma_on_release()
 	canvas:
 		Color:
 			rgba: 1, 0, 0, 1
@@ -34,6 +33,11 @@
 		Rectangle:
 			pos: (self.x, self.y + self.height - 15)
 			size: (self.size[0] * self.t / self.max_t, 5)
+	Button:
+		pos: (root.x, root.y)
+		size_hint: (None, None)
+		size: (root.width, root.height-15)
+		on_release: root.ma_on_release()
 
 <MagicMatesGame>:
 	orientation: 'vertical'
