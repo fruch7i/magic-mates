@@ -12,6 +12,14 @@ from kivy.properties import ObjectProperty, NumericProperty, BoundedNumericPrope
 
 import random
 
+# a dictionary with all abilities, their manacost, their targeting type and reach
+ability_dict = {'move': [0, 'move', 'direct'],
+        'knightsmove': [20, 'move', 'knight'],
+        'teleport': [50, 'move', 'infinite'],
+        'attack': [0, 'enemy', 'direct'],
+        'knights attack': [0, 'enemy', 'knight'],
+        'freeze': [30, 'enemy', 'infinite']}
+
 class Mate(FloatLayout):
     ''' the base class for characters, the mages moving on the PlayingField '''
     # you have to declare the properties at class level, not at init, in order to get expected behaviour
@@ -79,14 +87,7 @@ class Mate(FloatLayout):
         ''' create select buttons based on the ability used '''
         index = self.parent.children[:].index(self)
 
-        if  ability == 'move' or ability == 'attack':
-            reach = 'direct'
-        elif ability == 'knightsmove':
-            reach = 'knight'
-        else:
-            reach = 'infinite'
-
-        if reach == 'direct':
+        if ability_dict[ability][2] == 'direct':
             index_list = [index+1, index-1, index+10, index-10]
             index_list = [i for i in index_list if i >= 0 and i < 100] # remove upper and lower borders
             try:
@@ -97,7 +98,7 @@ class Mate(FloatLayout):
             except ValueError:
                 pass
 
-        elif reach == 'knight':
+        elif ability_dict[ability][2] == 'knight':
             index_list = [index+12, index-12, index+8, index-8, index+21, index-21, index+19, index-19]
             if index < 20: # remove bottom border
                 try:
@@ -173,16 +174,17 @@ class Mate(FloatLayout):
                 except ValueError:
                     pass
 
-        elif reach == 'infinite':
+        elif ability_dict[ability][2] == 'infinite':
             index_list = list(range(0, 100))
             index_list.remove(index)
 
+        # create SelectButtons based on weather the abilities targeting type is move, enemy, friend or all mates
         for i in index_list:
             child = self.parent.children[i]
-            if ability == 'move' or ability == 'knightsmove':
+            if ability_dict[ability][1] == 'move':
                 if type(child) is EmptyField:
                     child.create_select_button(self, ability)
-            if ability == 'attack' or ability == 'freeze':
+            if ability_dict[ability][1] == 'enemy':
                 if type(child) is Mate:
                     child.create_select_button(self, ability)
 
@@ -192,7 +194,8 @@ class Mate(FloatLayout):
 
     def end_ability(self, ability, target):
         ''' end the ability selection, performing the ability here '''
-        if ability == 'move' or ability == 'knightsmove':
+        self.change_mana(ability_dict[ability][0], 0)
+        if ability_dict[ability][1] == 'move':
             self.parent.switch_positions_by_ref(self, target)
         elif ability == 'attack':
             target.change_health(50, 0)
@@ -205,10 +208,8 @@ class Mate(FloatLayout):
         # ToDo: add sufficient mana check here, grey out unavailable ability prompts
         game = App.get_running_app().root
         menu = game.ids['ability_menu']
-        menu.create_ability_prompt(self, 'move')
-        menu.create_ability_prompt(self, 'attack')
-        menu.create_ability_prompt(self, 'knightsmove')
-        menu.create_ability_prompt(self, 'freeze')
+        for key in ability_dict:
+            menu.create_ability_prompt(self, key)
 
     def end_turn(self):
         ''' end the turn by resetting t and game.is_running, and removing all AbilityPrompts '''
@@ -320,7 +321,10 @@ class BasicBoxLayout(BoxLayout):
 
 class AbilityMenu(BoxLayout):
     def create_ability_prompt(self, source, ability):
-        self.add_widget(AbilityPrompt(source, ability))
+        button = AbilityPrompt(source, ability)
+        self.add_widget(button)
+        if source.mana < ability_dict[ability][0]:
+            button.disabled = True
 
 class AbilityPrompt(RelativeLayout):
     ability = StringProperty('')
