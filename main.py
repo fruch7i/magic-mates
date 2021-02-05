@@ -36,11 +36,14 @@ class Mate(FloatLayout):
 
     base_dmg = 30
 
-    def __init__(self, **kwargs):
+    team = NumericProperty(0)
+
+    def __init__(self, team, **kwargs):
         super().__init__(**kwargs)
         self.health = self.max_health
         self.mana = self.max_mana
         self.t = random.randint(0,99)
+        self.team = team
 
     def change_health(self, damage, heal):
         self.health = self.health - damage + heal
@@ -186,7 +189,8 @@ class Mate(FloatLayout):
                     child.create_select_button(self, ability)
             if ability_dict[ability][1] == 'enemy':
                 if type(child) is Mate:
-                    child.create_select_button(self, ability)
+                    if self.team != child.team:
+                        child.create_select_button(self, ability)
 
     def start_ability(self, ability):
         ''' initiate the target selection '''
@@ -246,6 +250,7 @@ class Mate(FloatLayout):
         self.parent.remove_mate(self)
 
 class InfoPopup(Popup):
+    team_label = StringProperty()
     health_label = StringProperty()
     mana_label = StringProperty()
     time_label = StringProperty()
@@ -254,6 +259,7 @@ class InfoPopup(Popup):
     abil_label = StringProperty()
     def __init__(self, mate, **kwargs):
         super().__init__(**kwargs)
+        self.team_label = "team: {}".format(mate.team)
         self.health_label = "health: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.health, mate.max_health, mate.health_regen)
         self.mana_label = "mana: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.mana, mate.max_mana, mate.mana_regen)
         self.time_label = "time: {0:0.1f}/{1:0.1f}".format(mate.t, mate.max_t)
@@ -344,9 +350,12 @@ class PlayingField(GridLayout):
         self.cols = 10
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1)
-        self.create_mate(11)
-        self.create_mate(12)
+        self.create_mate(1, 14)
+        self.create_mate(1, 15)
+        self.create_mate(1, 16)
+        self.create_mate(2, 24)
+        self.create_mate(2, 25)
+        self.create_mate(2, 26)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
@@ -356,9 +365,9 @@ class PlayingField(GridLayout):
         ''' switch positions of two children without knowing the indices of the objects '''
         self.switch_positions(self.children[:].index(object1), self.children[:].index(object2))
 
-    def create_mate(self, index):
+    def create_mate(self, team, index):
         ''' create a new Mate by adding it to the children list, swapping it with the according EmptyField, finally removing the EmptyField '''
-        self.add_widget(Mate())
+        self.add_widget(Mate(team))
         self.switch_positions(index+1, 0)
         self.remove_widget(self.children[0])
 
