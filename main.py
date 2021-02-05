@@ -60,7 +60,7 @@ class Mate(FloatLayout):
         self.add_widget(SelectButton(source, ability))
 
     def create_select_buttons(self, ability):
-        ''' create select buttons based on the ability used, introduction of a range parameter could be useful to categorize abilities '''
+        ''' create select buttons based on the ability used '''
         index = self.parent.children[:].index(self)
 
         if  ability == 'move' or ability == 'attack':
@@ -157,10 +157,6 @@ class Mate(FloatLayout):
                 except ValueError:
                     pass
 
-
-
-
-            # ToDo: proper range checks
         elif reach == 'infinite':
             index_list = range(0, 100)
 
