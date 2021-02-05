@@ -16,6 +16,24 @@
 	Button:
 		on_release: root.ef_on_release()
 
+<InfoPopup>:
+	title: 'Character information'
+	BoxLayout:
+		orientation: 'vertical'
+		Label:
+			text: root.health_label
+		Label:
+			text: root.mana_label
+		Label:
+			text: root.time_label
+		Label:
+			text: root.dmg_label
+		Label:
+			text: root.buff_label
+		Button:
+			text: 'BACK'
+			on_release: root.dismiss()
+
 <Mate>:
 	canvas:
 		Color:

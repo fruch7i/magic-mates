@@ -7,6 +7,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
+from kivy.uix.popup import Popup
 from kivy.properties import ObjectProperty, NumericProperty, BoundedNumericProperty, StringProperty
 
 import random
@@ -48,15 +49,30 @@ class Mate(FloatLayout):
             self.mana = self.max_mana
 
     def ma_on_release(self):
-        self.create_buff('test')
+        self.show_details_popup()
+
+    def show_details_popup(self):
+        ''' open an InfoPopup that shows all the details about the character '''
+        popup = InfoPopup(self)
+        popup.open()
 
     def create_buff(self, mode):
-        self.add_widget(Buff(mode))
+        ''' add a new buff to the Mate '''
+        buff_found = False
+        for child in self.children:
+            if type(child) is Buff:
+                if child.mode == mode:
+                    child.apply_buff(self)
+                    buff_found = True
+        if buff_found == False:
+            self.add_widget(Buff(mode, self))
 
     def remove_buff(self, buff):
+        ''' remove a buff from the Mate '''
         self.remove_widget(buff)
 
     def create_select_button(self, source, ability):
+        ''' create a SelectButton on this Mate, so that it can be selected as a target by other Mates '''
         self.add_widget(SelectButton(source, ability))
 
     def create_select_buttons(self, ability):
@@ -158,14 +174,17 @@ class Mate(FloatLayout):
                     pass
 
         elif reach == 'infinite':
-            index_list = range(0, 100)
+            index_list = list(range(0, 100))
+            index_list.remove(index)
 
         for i in index_list:
             child = self.parent.children[i]
-            if ability == 'move' or ability == 'knightsmove' and type(child) is EmptyField:
-                child.create_select_button(self, ability)
-            if ability == 'attack' and type(child) is Mate:
-                child.create_select_button(self, ability)
+            if ability == 'move' or ability == 'knightsmove':
+                if type(child) is EmptyField:
+                    child.create_select_button(self, ability)
+            if ability == 'attack' or ability == 'freeze':
+                if type(child) is Mate:
+                    child.create_select_button(self, ability)
 
     def start_ability(self, ability):
         ''' initiate the target selection '''
@@ -177,8 +196,9 @@ class Mate(FloatLayout):
             self.parent.switch_positions_by_ref(self, target)
         elif ability == 'attack':
             target.change_health(50, 0)
+        elif ability == 'freeze':
+            target.create_buff(ability)
         self.end_turn()
-        print('index after moving: {}'.format(self.parent.children.index(self)))
 
     def start_turn(self):
         ''' start the turn by setting game.is_running to False, adding ability prompts '''
@@ -188,7 +208,7 @@ class Mate(FloatLayout):
         menu.create_ability_prompt(self, 'move')
         menu.create_ability_prompt(self, 'attack')
         menu.create_ability_prompt(self, 'knightsmove')
-        menu.create_ability_prompt(self, 'test2')
+        menu.create_ability_prompt(self, 'freeze')
 
     def end_turn(self):
         ''' end the turn by resetting t and game.is_running, and removing all AbilityPrompts '''
@@ -224,15 +244,45 @@ class Mate(FloatLayout):
         ''' called when the mate dies '''
         self.parent.remove_mate(self)
 
+class InfoPopup(Popup):
+    health_label = StringProperty()
+    mana_label = StringProperty()
+    time_label = StringProperty()
+    dmg_label = StringProperty()
+    buff_label = StringProperty()
+    abil_label = StringProperty()
+    def __init__(self, mate, **kwargs):
+        super().__init__(**kwargs)
+        self.health_label = "health: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.health, mate.max_health, mate.health_regen)
+        self.mana_label = "mana: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.mana, mate.max_mana, mate.mana_regen)
+        self.time_label = "time: {0:0.1f}/{1:0.1f}".format(mate.t, mate.max_t)
+        self.dmg_label = "base damage: {0:0.1f}".format(mate.base_dmg)
+        self.buff_label = "active Buffs: \n"
+        for child in mate.children:
+            if type(child) is Buff:
+                self.buff_label += child.mode + '(' + str(child.stacks) + ') remaining time: ' + str(child.t) + '\n'
+
 class Buff(Widget):
     ''' a widget used to save permanent and temporary changes (buffs/debuffs) on a Mate '''
-    t = 100.
-    stacks = 1
-    def __init__(self, mode, **kwargs):
+    t = 0.
+    stacks = 0
+    def __init__(self, mode, target, **kwargs):
         super().__init__(**kwargs)
         self.mode = mode
+        self.apply_buff(target)
+
+    def apply_buff(self, target):
+        self.stacks += 1
+        self.t += 200.
+        if self.mode == 'freeze':
+            target.t = 0.5 * target.t
+            target.max_t += 10
 
     def remove_buff(self):
+        if self.mode == 'freeze':
+            mem_t = self.parent.t / self.parent.max_t
+            self.parent.max_t -= self.stacks * 10
+            self.parent.t = mem_t * self.parent.max_t
         self.parent.remove_buff(self)
 
     def update(self, *args):
