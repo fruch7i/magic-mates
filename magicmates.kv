@@ -29,7 +29,7 @@
 			pos: (self.x, self.y + self.height - 10)
 			size: (self.size[0] * self.mana / self.max_mana, 5)
 		Color:
-			rgba: 1, 1, 1, 1
+			rgba: (1, 1, 1, 1) if self.t < self.max_t else (1, 1, 0, 1)
 		Rectangle:
 			pos: (self.x, self.y + self.height - 15)
 			size: (self.size[0] * self.t / self.max_t, 5)

@@ -40,8 +40,8 @@ class Mate(FloatLayout):
         if self.health > self.max_health:
             self.health = self.max_health
 
-    def change_mana(self, manacost, manaboost):
-        self.mana = self.mana - manacost + manaboost
+    def change_mana(self, manacost, managain):
+        self.mana = self.mana - manacost + managain
         if self.mana < 0:
             self.mana = 0
         if self.mana > self.max_mana:
@@ -49,14 +49,11 @@ class Mate(FloatLayout):
 
     def ma_on_release(self):
         self.create_buff('test')
-        print('Mate.ma_on_release called')
 
     def create_buff(self, mode):
-        print('Mate.create_buff called')
         self.add_widget(Buff(mode))
 
     def remove_buff(self, buff):
-        print('Mate.remove_buff called')
         self.remove_widget(buff)
 
     def create_select_button(self, source, ability):
@@ -86,7 +83,84 @@ class Mate(FloatLayout):
 
         elif reach == 'knight':
             index_list = [index+12, index-12, index+8, index-8, index+21, index-21, index+19, index-19]
-            #do this later, it is frustrating
+            if index < 20: # remove bottom border
+                try:
+                    index_list.remove(index-19)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index-21)
+                except ValueError:
+                    pass
+            if index < 10:
+                try:
+                    index_list.remove(index-8)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index-12)
+                except ValueError:
+                    pass
+            if index >= 80: # remove top border
+                try:
+                    index_list.remove(index+19)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index+21)
+                except ValueError:
+                    pass
+            if index >= 90:
+                try:
+                    index_list.remove(index+8)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index+12)
+                except ValueError:
+                    pass
+
+            if index%10 <= 1: # remove right border
+                try:
+                    index_list.remove(index+8)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index-12)
+                except ValueError:
+                    pass
+            if index%10 == 0: 
+                try:
+                    index_list.remove(index+19)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index-21)
+                except ValueError:
+                    pass
+            if index%10 >= 8: # remove left border
+                try:
+                    index_list.remove(index-8)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index+12)
+                except ValueError:
+                    pass
+            if index%10 == 9: 
+                try:
+                    index_list.remove(index-19)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index+21)
+                except ValueError:
+                    pass
+
+
+
+
+            # ToDo: proper range checks
         elif reach == 'infinite':
             index_list = range(0, 100)
 
@@ -98,16 +172,21 @@ class Mate(FloatLayout):
                 child.create_select_button(self, ability)
 
     def start_ability(self, ability):
+        ''' initiate the target selection '''
         self.create_select_buttons(ability)
 
     def end_ability(self, ability, target):
-        if ability == 'move' or 'knightsmove':
+        ''' end the ability selection, performing the ability here '''
+        if ability == 'move' or ability == 'knightsmove':
             self.parent.switch_positions_by_ref(self, target)
         elif ability == 'attack':
             target.change_health(50, 0)
         self.end_turn()
+        print('index after moving: {}'.format(self.parent.children.index(self)))
 
     def start_turn(self):
+        ''' start the turn by setting game.is_running to False, adding ability prompts '''
+        # ToDo: add sufficient mana check here, grey out unavailable ability prompts
         game = App.get_running_app().root
         menu = game.ids['ability_menu']
         menu.create_ability_prompt(self, 'move')
@@ -133,6 +212,8 @@ class Mate(FloatLayout):
     def update(self, *args):
         game = App.get_running_app().root
         if game.is_running:
+            self.change_health(0, self.health_regen)
+            self.change_mana(0, self.mana_regen)
             self.t += 1.
             if self.t > self.max_t:
                 game.is_running = False
@@ -150,7 +231,7 @@ class Mate(FloatLayout):
 class Buff(Widget):
     ''' a widget used to save permanent and temporary changes (buffs/debuffs) on a Mate '''
     t = 100.
-    stacks = 0
+    stacks = 1
     def __init__(self, mode, **kwargs):
         super().__init__(**kwargs)
         self.mode = mode
@@ -213,9 +294,9 @@ class PlayingField(GridLayout):
         self.cols = 10
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(15)
-        self.create_mate(26)
-        self.create_mate(16)
+        self.create_mate(1)
+        self.create_mate(11)
+        self.create_mate(12)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
@@ -228,7 +309,7 @@ class PlayingField(GridLayout):
     def create_mate(self, index):
         ''' create a new Mate by adding it to the children list, swapping it with the according EmptyField, finally removing the EmptyField '''
         self.add_widget(Mate())
-        self.switch_positions(index, 0)
+        self.switch_positions(index+1, 0)
         self.remove_widget(self.children[0])
 
     def remove_mate(self, mate):
