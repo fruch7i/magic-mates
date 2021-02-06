@@ -12,13 +12,24 @@ from kivy.properties import ObjectProperty, NumericProperty, BoundedNumericPrope
 
 import random
 
-# a dictionary with all abilities, their manacost, their targeting type and reach
-ability_dict = {'move': [0, 'move', 'direct'],
-        'knightsmove': [20, 'move', 'knight'],
-        'teleport': [50, 'move', 'infinite'],
-        'attack': [0, 'enemy', 'direct'],
-        'knights attack': [0, 'enemy', 'knight'],
-        'freeze': [30, 'enemy', 'infinite']}
+# a dictionary with all abilities, their manacost, their targeting type, reach and full/half turn
+ability_dict = {'move': [0, 'move', 'direct', 'half'],
+        'knightsmove': [20, 'move', 'knight', 'half'],
+        'teleport': [50, 'move', 'infinite', 'full'],
+        'summon ghost': [100, 'summon', 'infinite', 'full'],
+        'pass': [0, 'none', 'none', 'half'],
+        'attack': [0, 'enemy', 'direct', 'full'],
+        'mana strike': [0, 'enemy', 'direct', 'full'],
+        'quick attack': [10, 'enemy', 'direct', 'half'],
+        'knights attack': [20, 'enemy', 'knight', 'full'],
+        'freeze': [30, 'enemy', 'infinite', 'full'],
+        'electrocute': [30, 'enemy', 'infinite', 'full'],
+        'burn': [30, 'enemy', 'infinite', 'full'],
+        'manaburn': [30, 'enemy', 'infinite', 'full'],
+        'poison': [30, 'enemy', 'infinite', 'full'],
+        'enrage': [40, 'ally', 'infinite', 'full']}
+
+cols = 7
 
 class Mate(FloatLayout):
     ''' the base class for characters, the mages moving on the PlayingField '''
@@ -34,8 +45,7 @@ class Mate(FloatLayout):
     mana = NumericProperty(1.0)
     mana_regen = 0.1
 
-    base_dmg = 30
-
+    base_damage = 30
     team = NumericProperty(0)
 
     def __init__(self, team, **kwargs):
@@ -91,105 +101,114 @@ class Mate(FloatLayout):
         index = self.parent.children[:].index(self)
 
         if ability_dict[ability][2] == 'direct':
-            index_list = [index+1, index-1, index+10, index-10]
-            index_list = [i for i in index_list if i >= 0 and i < 100] # remove upper and lower borders
+            index_list = [index+1, index-1, index+cols, index-cols]
+            index_list = [i for i in index_list if i >= 0 and i < cols**2] # remove upper and lower borders
             try:
-                if index%10 == 0: # remvoe left border
+                if index%cols == 0: # remvoe left border
                     index_list.remove(index-1)
-                if index%10 == 9: # remove right border
+                if index%cols == 9: # remove right border
                     index_list.remove(index+1)
             except ValueError:
                 pass
 
         elif ability_dict[ability][2] == 'knight':
-            index_list = [index+12, index-12, index+8, index-8, index+21, index-21, index+19, index-19]
-            if index < 20: # remove bottom border
+            index_list = [index+cols+2, index+cols-2, index+2*cols+1, index+2*cols-1, index-cols+2, index-cols-2, index-2*cols+1, index-2*cols-1]
+            if index < 2*cols: # remove bottom border
                 try:
-                    index_list.remove(index-19)
+                    index_list.remove(index-2*cols-1)
                 except ValueError:
                     pass
                 try:
-                    index_list.remove(index-21)
+                    index_list.remove(index-2*cols+1)
                 except ValueError:
                     pass
-            if index < 10:
+            if index < cols:
                 try:
-                    index_list.remove(index-8)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index-12)
-                except ValueError:
-                    pass
-            if index >= 80: # remove top border
-                try:
-                    index_list.remove(index+19)
+                    index_list.remove(index-cols-2)
                 except ValueError:
                     pass
                 try:
-                    index_list.remove(index+21)
+                    index_list.remove(index-cols+2)
                 except ValueError:
                     pass
-            if index >= 90:
+            if index >= cols*(cols-2): # remove top border
                 try:
-                    index_list.remove(index+8)
+                    index_list.remove(index+2*cols+1)
                 except ValueError:
                     pass
                 try:
-                    index_list.remove(index+12)
+                    index_list.remove(index+2*cols-1)
+                except ValueError:
+                    pass
+            if index >= cols*(cols-1):
+                try:
+                    index_list.remove(index+cols+2)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index+cols-2)
                 except ValueError:
                     pass
 
-            if index%10 <= 1: # remove right border
+            if index%cols <= 1: # remove right border
                 try:
-                    index_list.remove(index+8)
+                    index_list.remove(index+cols-2)
                 except ValueError:
                     pass
                 try:
-                    index_list.remove(index-12)
+                    index_list.remove(index-cols-2)
                 except ValueError:
                     pass
-            if index%10 == 0: 
+            if index%cols == 0: 
                 try:
-                    index_list.remove(index+19)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index-21)
-                except ValueError:
-                    pass
-            if index%10 >= 8: # remove left border
-                try:
-                    index_list.remove(index-8)
+                    index_list.remove(index+2*cols-1)
                 except ValueError:
                     pass
                 try:
-                    index_list.remove(index+12)
+                    index_list.remove(index-2*cols-1)
                 except ValueError:
                     pass
-            if index%10 == 9: 
+            if index%cols >= cols-2: # remove left border
                 try:
-                    index_list.remove(index-19)
+                    index_list.remove(index-cols+2)
                 except ValueError:
                     pass
                 try:
-                    index_list.remove(index+21)
+                    index_list.remove(index+cols+2)
+                except ValueError:
+                    pass
+            if index%cols == cols-1:
+                try:
+                    index_list.remove(index-2*cols+1)
+                except ValueError:
+                    pass
+                try:
+                    index_list.remove(index+2*cols+1)
                 except ValueError:
                     pass
 
         elif ability_dict[ability][2] == 'infinite':
-            index_list = list(range(0, 100))
+            index_list = list(range(0, cols**2))
             index_list.remove(index)
 
-        # create SelectButtons based on weather the abilities targeting type is move, enemy, friend or all mates
+        elif ability_dict[ability][2] == 'none':
+            index_list = [index]
+
+        # create SelectButtons based on weather the abilities targeting type is move, enemy, ally or all mates
         for i in index_list:
             child = self.parent.children[i]
-            if ability_dict[ability][1] == 'move':
+            if ability_dict[ability][1] == 'move' or ability_dict[ability][1] == 'summon':
                 if type(child) is EmptyField:
                     child.create_select_button(self, ability)
+            if ability_dict[ability][1] == 'none':
+                self.end_ability(ability, self)
             if ability_dict[ability][1] == 'enemy':
                 if type(child) is Mate:
                     if self.team != child.team:
+                        child.create_select_button(self, ability)
+            if ability_dict[ability][1] == 'ally':
+                if type(child) is Mate:
+                    if self.team == child.team:
                         child.create_select_button(self, ability)
 
     def start_ability(self, ability):
@@ -199,13 +218,39 @@ class Mate(FloatLayout):
     def end_ability(self, ability, target):
         ''' end the ability selection, performing the ability here '''
         self.change_mana(ability_dict[ability][0], 0)
+        damage = 0.
         if ability_dict[ability][1] == 'move':
             self.parent.switch_positions_by_ref(self, target)
-        elif ability == 'attack':
-            target.change_health(50, 0)
-        elif ability == 'freeze':
+        elif ability == 'pass':
+            self.change_health(0, 10)
+            self.change_mana(0, 10)
+        elif ability == 'summon ghost':
+            self.parent.create_ghost(self.team, target)
+        elif ability == 'attack' or ability == 'knights attack':
+            damage = self.base_damage
+        elif ability == 'mana strike':
+            damage = (1. + 0.02 * self.mana) * self.base_damage
+            print('mana strike damage: {} mana used: {}'.format(damage, self.mana))
+            self.mana = 0.0
+        elif ability == 'quick attack':
+            damage = 0.5*self.base_damage
+        elif ability == 'electrocute':
+            damage = 2*self.base_damage
+            target.t += 0.5 * (target.max_t - target.t)
+        else:
             target.create_buff(ability)
-        self.end_turn()
+        for child in self.children:
+            try:
+                if child.mode == 'enrage':
+                    damage = child.stacks * damage
+                    self.remove_buff(child)
+            except AttributeError:
+                pass
+        try:
+            target.change_health(damage, 0)
+        except AttributeError:
+            pass
+        self.end_turn(ability)
 
     def start_turn(self):
         ''' start the turn by setting game.is_running to False, adding ability prompts '''
@@ -215,9 +260,14 @@ class Mate(FloatLayout):
         for key in ability_dict:
             menu.create_ability_prompt(self, key)
 
-    def end_turn(self):
+    def end_turn(self, ability):
         ''' end the turn by resetting t and game.is_running, and removing all AbilityPrompts '''
-        self.t = 0.
+        if ability_dict[ability][3] == 'full':
+            self.t = 0.
+        elif ability_dict[ability][3] == 'half':
+            self.t = 0.5 * self.max_t
+        else:
+            print('Error, ability time type not valid')
         game = App.get_running_app().root
         game.is_running = True
         menu = game.ids['ability_menu']
@@ -236,7 +286,7 @@ class Mate(FloatLayout):
             self.change_health(0, self.health_regen)
             self.change_mana(0, self.mana_regen)
             self.t += 1.
-            if self.t > self.max_t:
+            if self.t >= self.max_t:
                 game.is_running = False
                 self.start_turn()
         for child in self.children:
@@ -263,7 +313,7 @@ class InfoPopup(Popup):
         self.health_label = "health: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.health, mate.max_health, mate.health_regen)
         self.mana_label = "mana: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.mana, mate.max_mana, mate.mana_regen)
         self.time_label = "time: {0:0.1f}/{1:0.1f}".format(mate.t, mate.max_t)
-        self.dmg_label = "base damage: {0:0.1f}".format(mate.base_dmg)
+        self.dmg_label = "base damage: {0:0.1f}".format(mate.base_damage)
         self.buff_label = "active Buffs: \n"
         for child in mate.children:
             if type(child) is Buff:
@@ -284,6 +334,8 @@ class Buff(Widget):
         if self.mode == 'freeze':
             target.t = 0.5 * target.t
             target.max_t += 10
+        if self.mode == 'manaburn':
+            target.change_mana(40, 0)
 
     def remove_buff(self):
         if self.mode == 'freeze':
@@ -296,6 +348,12 @@ class Buff(Widget):
         game = App.get_running_app().root
         if game.is_running:
             self.t -= 1
+            if self.mode == 'poison':
+                self.parent.change_health(0, -2.*self.parent.health_regen)
+            if self.mode == 'burn':
+                self.parent.change_health(self.stacks*0.02, 0)
+            if self.mode == 'manaburn':
+                self.parent.change_health(0, -self.stacks*self.parent.mana_regen)
             if self.t < 0.:
                 self.remove_buff()
 
@@ -347,15 +405,19 @@ class PlayingField(GridLayout):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cols = 10
+        self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1, 14)
-        self.create_mate(1, 15)
-        self.create_mate(1, 16)
-        self.create_mate(2, 24)
-        self.create_mate(2, 25)
-        self.create_mate(2, 26)
+        self.create_mate(1, 1)
+        self.create_mate(1, 2)
+        self.create_mate(1, 3)
+        self.create_mate(1, 4)
+        self.create_mate(1, 5)
+        self.create_mate(2, 43)
+        self.create_mate(2, 44)
+        self.create_mate(2, 45)
+        self.create_mate(2, 46)
+        self.create_mate(2, 47)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
@@ -369,6 +431,17 @@ class PlayingField(GridLayout):
         ''' create a new Mate by adding it to the children list, swapping it with the according EmptyField, finally removing the EmptyField '''
         self.add_widget(Mate(team))
         self.switch_positions(index+1, 0)
+        self.remove_widget(self.children[0])
+
+    def create_ghost(self, team, target):
+        ''' create a new Mate with lower stats '''
+        ghost = Mate(team)
+        ghost.max_health = 50
+        ghost.base_damage = 15
+        ghost.t = 1.
+        self.add_widget(ghost)
+        index = self.children[:].index(target)
+        self.switch_positions(index, 0)
         self.remove_widget(self.children[0])
 
     def remove_mate(self, mate):
