@@ -103,6 +103,8 @@ weapon_dict = {'longsword': 30,
 class Ability():
     def __init__(self, name):
         self.base = name
+        self.upgrades = [name]
+        self.possible_upgrades = ['test1', 'test2', 'test3']
         self.manacost = ability_dict[name][0]
         self.target_type = ability_dict[name][1]
         self.reach = ability_dict[name][2]
@@ -152,6 +154,23 @@ class Mate(FloatLayout):
             self.mana = 0
         if self.mana > self.max_mana:
             self.mana = self.max_mana
+
+    def attack(self, target, damage):
+        ''' attacking a target Mate '''
+        for child in self.children:
+            try:
+                if child.mode == 'invigorated':
+                    damage = child.stacks * damage
+                    self.remove_buff(child)
+            except AttributeError:
+                pass
+        for child in self.children:
+            try:
+                if child.mode == 'freeze blade' or child.mode == 'burn blade' or child.mode == 'manaburn blade':
+                    target.create_buff(child.ability)
+            except AttributeError:
+                pass
+        target.change_health(damage, 0)
 
     def ma_on_release(self):
         self.show_details_popup()
@@ -342,7 +361,6 @@ class Mate(FloatLayout):
         if ability.experience >= ability.lvl_up_experience:
             ability.level += 1
             ability.experience = 0
-        damage = 0.
         if ability.target_type == 'move':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
@@ -353,28 +371,18 @@ class Mate(FloatLayout):
         elif ability.base == 'summon ghost':
             self.parent.create_ghost(self.team, target)
         elif ability.base == 'attack' or ability == 'knights attack':
-            damage = self.base_damage
+            self.attack(target, self.base_damage)
         elif ability.base == 'mana strike':
             damage = (1. + 0.02 * self.mana) * self.base_damage
+            self.attack(target, damage)
             self.mana = 0.0
         elif ability.base == 'quick attack':
-            damage = 0.5*self.base_damage
+            self.attack(target, 0.5*self.base_damage)
         elif ability.base == 'electrocute':
-            damage = 2*self.base_damage
+            self.attack(target, 2.*self.base_damage)
             target.t += 0.5 * (target.max_t - target.t)
         else:
             target.create_buff(ability)
-        for child in self.children:
-            try:
-                if child.mode == 'invigorated':
-                    damage = child.stacks * damage
-                    self.remove_buff(child)
-            except AttributeError:
-                pass
-        try:
-            target.change_health(damage, 0)
-        except AttributeError:
-            pass
         self.end_turn(ability)
 
     def start_turn(self):
@@ -454,6 +462,7 @@ class Buff(Widget):
     stacks = 0
     def __init__(self, ability, target, **kwargs):
         super().__init__(**kwargs)
+        self.ability = ability
         self.mode = buff_dict[ability.base]
         self.apply_buff(ability, target)
 
@@ -546,11 +555,11 @@ class PlayingField(GridLayout):
             self.add_widget(EmptyField())
         self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'axe', 2)
         self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'longsword', 3)
-        #self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 'wand and buckler', 4)
+        self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 'wand and buckler', 4)
 
-        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 'spear', 44)
-        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 'axe', 45)
-        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 'magic staff', 46)
+        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 'spear', 44)
+        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 'axe', 45)
+        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 'magic staff', 46)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
