@@ -29,15 +29,19 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'bishop charge': [20, 'move', 'bishop', 'full'],
         'mana strike': [0, 'enemy', 'weapon', 'full'],
         'quick attack': [10, 'enemy', 'weapon', 'half'],
-        'double attack': [30, 'enemy', 'weapon', 'full'],
+        'double attack': [60, 'enemy', 'weapon', 'full'],
         'knights attack': [20, 'enemy', 'knight', 'full'],
         'freeze': [30, 'enemy', 'infinite', 'full'],
         'electrocute': [30, 'enemy', 'infinite', 'full'],
         'burn': [30, 'enemy', 'infinite', 'full'],
         'manaburn': [30, 'enemy', 'infinite', 'full'],
         'poison': [30, 'enemy', 'infinite', 'full'],
+        'cleanse': [20, 'ally', 'infinite', 'full'],
+        'purge': [20, 'enemy', 'infinite', 'full'],
         'invigorate': [40, 'ally', 'infinite', 'full'],
         'heal': [40, 'ally', 'infinite', 'full'],
+        'mana gift': [30, 'ally', 'infinite', 'full'],
+        'morale raise': [30, 'ally', 'infinite', 'full']
         'regenerate': [40, 'ally', 'infinite', 'full'],
         'stun': [40, 'enemy', 'infinite', 'full']}
 
@@ -55,10 +59,6 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # bonus damage if allies are on opposing sides
 
 # new abilities:
-# mana gift
-# morale boost: time increase
-# cleanse: defensive removal of buffs
-# purge: offensive removal of buffs
 # shield bash: attack + push back
 # shield raise: damage reduction increase
 # magic shield: blocking next buff application
@@ -69,11 +69,9 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # novices thunder: very weak attack spell with insane gains through level up
 
 # abilities level up:
-# freeze: stun on apply, infinite time, ally targeting freeze blade
-# burn: stronger burn, infinite time, ally targeting burn blade
-# double attack: triple attack
-# heal: heal all
 # regenerate: regenerate all
+
+# cleanse and purge need a function - cleanse random, cleanse positive and negative, cleanse all, there are many distinctions
 
 # inkscape images of wizards
 # wizards with different weapons
@@ -103,6 +101,8 @@ weapon_dict = {'longsword': 30,
 # a dictionary with the available upgrades for an Ability
 ability_upgrades_dict = {'freeze': ['stunning freeze', 'everlasting freeze', 'freeze blade'],
         'burn': ['stacking burn', 'everlasting burn', 'burn blade'],
+        'heal': ['heal all', 'cleanse', 'stronger heal'],
+        'double attack': ['triple attack', 'more damage', 'reduced manacost'],
         'manaburn': ['mana steal', 'strong manaburn', 'manaburn blade']}
 
 class Ability():
@@ -113,20 +113,21 @@ class Ability():
             self.possible_upgrades = ability_upgrades_dict[name]
             self.level_up_experience = 2
         except KeyError:
-            self.possible_upgrades = ['test1', 'test2', 'test3']
-            self.level_up_experience = 100
+            self.level_up_experience = np.infty
         self.manacost = ability_dict[name][0]
         self.target_type = ability_dict[name][1]
         self.reach = ability_dict[name][2]
         self.time_usage = ability_dict[name][3]
         self.experience = 0
         self.level = 1
-    def level_up(self, choice):
+    def level_up(self, upgrade):
+        if upgrade == 'reduced manacost':
+            self.manacost = 30
         try:
-            self.possible_upgrades.pop(self.possible_upgrades.index(choice))
+            self.possible_upgrades.pop(self.possible_upgrades.index(upgrade))
             if not self.possible_upgrades:
                 self.level_up_experience = np.infty
-            self.upgrades.append(choice)
+            self.upgrades.append(upgrade)
         except ValueError:
             pass
 
@@ -392,7 +393,23 @@ class Mate(FloatLayout):
             self.change_health(0, 10)
             self.change_mana(0, 10)
         elif ability.base == 'heal':
-            target.change_health(0, 40)
+            healing = 30
+            if 'stronger heal' in ability.upgrades:
+                healing = 50
+            if 'heal all' in ability.upgrades:
+                for child in self.parent.children[:]:
+                    if type(child) is Mate and child.team == self.team:
+                        target.change_health(0, healing)
+            else:
+                target.change_health(0, healing)
+        elif ability.base == 'mana gift':
+            target.change_mana(0, 30)
+        elif ability.base == 'morale raise':
+            target.t += 0.5 * (target.max_t - target.t)
+        elif ability.base == 'cleanse':
+            for child in target.children[:]:
+                if type(child) is Buff:
+                    target.remove_buff(child)
         elif ability.base == 'summon ghost':
             self.parent.create_ghost(self.team, target)
         elif ability.base == 'attack' or ability == 'knights attack':
@@ -407,8 +424,13 @@ class Mate(FloatLayout):
         elif ability.base == 'quick attack':
             self.attack(target, 0.5*self.base_damage)
         elif ability.base == 'double attack':
-            self.attack(target, self.base_damage)
-            self.attack(target, self.base_damage)
+            modifier = 0.6
+            if 'more damage' in ability.upgrades:
+                modifier = 0.8
+            self.attack(target, modifier * self.base_damage)
+            self.attack(target, modifier * self.base_damage)
+            if 'triple attack' in ability.upgrades:
+                self.attack(target, modifier * self.base_damage)
         elif ability.base == 'electrocute':
             self.attack(target, 2.*self.base_damage)
             target.t += 0.5 * (target.max_t - target.t)
@@ -483,9 +505,6 @@ class LevelUpLayout(BoxLayout):
 
 class LevelUpPopup(Popup):
     ''' a Popup used to level up an Ability '''
-    choice1 = StringProperty()
-    choice2 = StringProperty()
-    choice3 = StringProperty()
     def __init__(self, ability, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
@@ -509,7 +528,7 @@ class InfoPopup(Popup):
         self.weapon_label = "weapon {0} with base damage: {1:0.1f}".format(mate.weapon, mate.base_damage)
         self.abilities_label = "active Abilities: \n"
         for ability in mate.abilities:
-            self.abilities_label += ability.base + ' ( lvl: ' + str(ability.level) + ' / exp: ' + str(ability.experience) + ')' + '\n'
+            self.abilities_label += ability.base + ' ( lvl: ' + str(ability.level) + ' / exp: ' + str(ability.experience) + '/' + str(ability.level_up_experience) + ')' + '\n'
         self.buff_label = "active Buffs: \n"
         for child in mate.children:
             if type(child) is Buff:
