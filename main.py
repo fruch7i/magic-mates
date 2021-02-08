@@ -18,14 +18,16 @@ cols = 7
 
 # a dictionary with all abilities, used to init the Ability class
 # key: base name *** 0: manacost *** 1: target_type *** 2: reach *** 3: time_usage
-ability_dict = {'move': [0, 'move', 'direct', 'half'],
-        'knightsmove': [20, 'move', 'knight', 'half'],
+ability_dict = {'move': [0, 'move', 'axe', 'half'],
+        'knights move': [20, 'move', 'knight', 'half'],
         'teleport': [50, 'move', 'infinite', 'full'],
         'summon ghost': [100, 'summon', 'infinite', 'full'],
         'pass': [0, 'none', 'none', 'half'],
-        'attack': [0, 'enemy', 'direct', 'full'],
-        'mana strike': [0, 'enemy', 'direct', 'full'],
-        'quick attack': [10, 'enemy', 'direct', 'half'],
+        'attack': [0, 'enemy', 'weapon', 'full'],
+        'rookie charge': [20, 'all', 'rook', 'full'],
+        'bishop charge': [20, 'all', 'bishop', 'full'],
+        'mana strike': [0, 'enemy', 'weapon', 'full'],
+        'quick attack': [10, 'enemy', 'weapon', 'half'],
         'knights attack': [20, 'enemy', 'knight', 'full'],
         'freeze': [30, 'enemy', 'infinite', 'full'],
         'electrocute': [30, 'enemy', 'infinite', 'full'],
@@ -88,6 +90,16 @@ buff_dict = {'freeze': 'frozen',
         'invigorate': 'invigorated',
         'stun': 'stunned'}
 
+# a dictionary mapping weapon to its base_damage
+weapon_dict = {'longsword': 30,
+        'sword and shield': 20,
+        'axe': 30,
+        'axe and buckler': 20,
+        'spear': 20,
+        'bow': 20,
+        'magic staff': 10,
+        'wand and buckler': 5}
+
 class Ability():
     def __init__(self, name):
         self.base = name
@@ -113,16 +125,19 @@ class Mate(FloatLayout):
     mana = NumericProperty(1.0)
     mana_regen = 0.1
 
-    base_damage = 30
     team = NumericProperty(0)
+    weapon = StringProperty('')
+    base_damage = 0
 
-    def __init__(self, team, abilities, **kwargs):
+    def __init__(self, team, abilities, weapon, **kwargs):
         super().__init__(**kwargs)
         self.health = self.max_health
         self.mana = self.max_mana
         self.t = random.randint(0,99)
         self.team = team
         self.abilities = abilities
+        self.weapon = weapon
+        self.base_damage = weapon_dict[weapon]
 
     def change_health(self, damage, heal):
         self.health = self.health - damage + heal
@@ -168,8 +183,12 @@ class Mate(FloatLayout):
     def create_select_buttons(self, ability):
         ''' create select buttons based on the ability used '''
         index = self.parent.children[:].index(self)
+        if ability.reach == 'weapon':
+            reach = self.weapon
+        else:
+            reach = ability.reach
 
-        if ability.reach == 'direct':
+        if reach == 'longsword' or reach == 'sword and shield':
             index_list = [index+1, index-1, index+cols, index-cols]
             index_list = [i for i in index_list if i >= 0 and i < cols**2] # remove upper and lower borders
             try:
@@ -180,87 +199,117 @@ class Mate(FloatLayout):
             except ValueError:
                 pass
 
-        elif ability.reach == 'knight':
-            index_list = [index+cols+2, index+cols-2, index+2*cols+1, index+2*cols-1, index-cols+2, index-cols-2, index-2*cols+1, index-2*cols-1]
-            if index < 2*cols: # remove bottom border
-                try:
-                    index_list.remove(index-2*cols-1)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index-2*cols+1)
-                except ValueError:
-                    pass
-            if index < cols:
-                try:
-                    index_list.remove(index-cols-2)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index-cols+2)
-                except ValueError:
-                    pass
-            if index >= cols*(cols-2): # remove top border
-                try:
-                    index_list.remove(index+2*cols+1)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index+2*cols-1)
-                except ValueError:
-                    pass
-            if index >= cols*(cols-1):
-                try:
-                    index_list.remove(index+cols+2)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index+cols-2)
-                except ValueError:
-                    pass
-
-            if index%cols <= 1: # remove right border
-                try:
-                    index_list.remove(index+cols-2)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index-cols-2)
-                except ValueError:
-                    pass
-            if index%cols == 0: 
-                try:
-                    index_list.remove(index+2*cols-1)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index-2*cols-1)
-                except ValueError:
-                    pass
-            if index%cols >= cols-2: # remove left border
-                try:
-                    index_list.remove(index-cols+2)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index+cols+2)
-                except ValueError:
-                    pass
+        elif reach == 'axe':
+            index_list = [index+1, index-1, index+cols, index-cols, index+1+cols, index-1+cols, index+1-cols, index-1-cols]
+            index_list = [i for i in index_list if i >= 0 and i < cols**2] # remove upper and lower borders
+            if index%cols == 0:
+                index_list = [i for i in index_list if i%cols <= 2] # remove right border
             if index%cols == cols-1:
-                try:
-                    index_list.remove(index-2*cols+1)
-                except ValueError:
-                    pass
-                try:
-                    index_list.remove(index+2*cols+1)
-                except ValueError:
-                    pass
+                index_list = [i for i in index_list if i%cols >= cols-3] # remove left border
 
-        elif ability.reach == 'infinite':
+        elif reach == 'spear':
+            index_list = [index+1, index-1, index+2, index-2, index+cols, index-cols, index+2*cols, index-2*cols, index+1+cols, index-1+cols, index+1-cols, index-1-cols]
+            index_list = [i for i in index_list if i >= 0 and i < cols**2] # remove upper and lower borders
+            if index%cols == 0 or index%cols == 1:
+                index_list = [i for i in index_list if i%cols <= 3] # remove right border
+            if index%cols == cols-1 or index%cols == cols-2:
+                index_list = [i for i in index_list if i%cols >= cols-4] # remove left border
+
+        elif reach == 'knight':
+            index_list = [index+cols+2, index+cols-2, index+2*cols+1, index+2*cols-1, index-cols+2, index-cols-2, index-2*cols+1, index-2*cols-1]
+            index_list = [i for i in index_list if i >= 0 and i < cols**2] # remove upper and lower borders
+            if index%cols == 0 or index%cols == 1:
+                index_list = [i for i in index_list if i%cols <= 3] # remove right border
+            if index%cols == cols-1 or index%cols == cols-2:
+                index_list = [i for i in index_list if i%cols >= cols-4] # remove left border
+
+        elif reach == 'rook':
+            index_list = []
+            for i in range(1, cols+2): # going top
+                if index+i*cols >= cols**2:
+                    break
+                if type(self.parent.children[index+i*cols]) is Mate:
+                    break
+                index_list.append(index+i*cols)
+
+            for i in range(1, cols+2): # going bottom
+                if index-i*cols < 0:
+                    break
+                if type(self.parent.children[index-i*cols]) is Mate:
+                    break
+                index_list.append(index-i*cols)
+
+            for i in range(1, cols+2): # going right
+                if index%cols == 0:
+                    break
+                if type(self.parent.children[index-i]) is Mate:
+                    break
+                index_list.append(index-i)
+                if (index-i)%cols == 0:
+                    break
+
+            for i in range(1, cols+2): # going left
+                if index%cols == cols-1:
+                    break
+                if type(self.parent.children[index+i]) is Mate:
+                    break
+                index_list.append(index+i)
+                if (index+i)%cols == cols-1:
+                    break
+
+        elif reach == 'bishop':
+            index_list = []
+            top_right = True
+            top_left = True
+            bot_right = True
+            bot_left = True
+            for i in range(1, cols+2):
+                if top_right:
+                    if index%cols == 0 or index >= cols**2-cols:
+                        top_right = False
+                    if top_right:
+                        if type(self.parent.children[index-i+i*cols]) is Mate:
+                            top_right = False
+                        else:
+                            index_list.append(index-i+i*cols)
+                            if (index-i+i*cols)%cols == 0 or (index-i+i*cols) >= cols**2-cols:
+                                top_right = False
+                if top_left:
+                    if index%cols == cols-1 or index >= cols**2-cols:
+                        top_left = False
+                    if top_left:
+                        if type(self.parent.children[index+i+i*cols]) is Mate:
+                            top_left = False
+                        else:
+                            index_list.append(index+i+i*cols)
+                            if (index+i+i*cols)%cols == cols-1 or (index+i+i*cols) >= cols**2-cols:
+                                top_left = False
+                if bot_right:
+                    if index%cols == 0 or index < cols:
+                        bot_right = False
+                    if bot_right:
+                        if type(self.parent.children[index-i-i*cols]) is Mate:
+                            bot_right = False
+                        else:
+                            index_list.append(index-i-i*cols)
+                            if (index-i-i*cols)%cols == 0 or (index-i-i*cols) <= cols:
+                                bot_right = False
+                if bot_left:
+                    if index%cols == cols-1 or index < cols:
+                        bot_left = False
+                    if bot_left:
+                        if type(self.parent.children[index+i-i*cols]) is Mate:
+                            bot_left = False
+                        else:
+                            index_list.append(index+i-i*cols)
+                            if (index+i-i*cols)%cols == cols-1 or (index+i-i*cols) <= cols:
+                                bot_left = False
+
+        elif reach == 'infinite' or reach == 'magic staff' or reach == 'wand and buckler':
             index_list = list(range(0, cols**2))
             index_list.remove(index)
 
-        elif ability.reach == 'none':
+        elif reach == 'none':
             index_list = [index]
 
         # create SelectButtons based on weather the abilities targeting type is move, enemy, ally or all mates
@@ -279,6 +328,8 @@ class Mate(FloatLayout):
                 if type(child) is Mate:
                     if self.team == child.team:
                         child.create_select_button(self, ability)
+            if ability.target_type == 'all':
+                child.create_select_button(self, ability)
 
     def start_ability(self, ability):
         ''' initiate the target selection '''
@@ -293,6 +344,8 @@ class Mate(FloatLayout):
             ability.experience = 0
         damage = 0.
         if ability.target_type == 'move':
+            self.parent.switch_positions_by_ref(self, target)
+        elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'pass':
             self.change_health(0, 10)
@@ -377,7 +430,7 @@ class InfoPopup(Popup):
     health_label = StringProperty()
     mana_label = StringProperty()
     time_label = StringProperty()
-    dmg_label = StringProperty()
+    weapon_label = StringProperty()
     buff_label = StringProperty()
     abilities_label = StringProperty()
     def __init__(self, mate, **kwargs):
@@ -386,7 +439,7 @@ class InfoPopup(Popup):
         self.health_label = "health: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.health, mate.max_health, mate.health_regen)
         self.mana_label = "mana: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.mana, mate.max_mana, mate.mana_regen)
         self.time_label = "time: {0:0.1f}/{1:0.1f}".format(mate.t, mate.max_t)
-        self.dmg_label = "base damage: {0:0.1f}".format(mate.base_damage)
+        self.weapon_label = "weapon {0} with base damage: {1:0.1f}".format(mate.weapon, mate.base_damage)
         self.abilities_label = "active Abilities: \n"
         for ability in mate.abilities:
             self.abilities_label += ability.base + ' ( lvl: ' + str(ability.level) + ' / exp: ' + str(ability.experience) + ')' + '\n'
@@ -491,13 +544,13 @@ class PlayingField(GridLayout):
         self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1, [Ability('move'), Ability('attack'), Ability('freeze')], 2)
-        self.create_mate(1, [Ability('move'), Ability('attack'), Ability('burn')], 3)
-        self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 4)
+        self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'axe', 2)
+        self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'longsword', 3)
+        #self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 'wand and buckler', 4)
 
-        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 44)
-        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 45)
-        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 46)
+        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 'spear', 44)
+        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 'axe', 45)
+        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 'magic staff', 46)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
@@ -507,15 +560,15 @@ class PlayingField(GridLayout):
         ''' switch positions of two children without knowing the indices of the objects '''
         self.switch_positions(self.children[:].index(object1), self.children[:].index(object2))
 
-    def create_mate(self, team, abilities, index):
+    def create_mate(self, team, abilities, weapon, index):
         ''' create a new Mate by adding it to the children list, swapping it with the according EmptyField, finally removing the EmptyField '''
-        self.add_widget(Mate(team, abilities))
+        self.add_widget(Mate(team, abilities, weapon))
         self.switch_positions(index+1, 0)
         self.remove_widget(self.children[0])
 
     def create_ghost(self, team, target):
         ''' create a new Mate with lower stats '''
-        ghost = Mate(team)
+        ghost = Mate(team, ['move', 'attack', 'pass'], 'axe')
         ghost.max_health = 50
         ghost.base_damage = 15
         ghost.t = 1.
