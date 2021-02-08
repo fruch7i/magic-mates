@@ -16,6 +16,21 @@
 	Button:
 		on_release: root.ef_on_release()
 
+<LevelUpPopup>:
+	title: 'Ability leveled up!'
+	BoxLayout:
+		orientation: 'vertical'
+		Button:
+			text: root.choice1
+			on_release: root.on_release1()
+		Button:
+			text: root.choice2
+			on_release: root.on_release2()
+		Button:
+			text: root.choice3
+			on_release: root.on_release3()
+
+
 <InfoPopup>:
 	title: 'Character information'
 	BoxLayout:

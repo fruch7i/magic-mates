@@ -28,6 +28,7 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'bishop charge': [20, 'all', 'bishop', 'full'],
         'mana strike': [0, 'enemy', 'weapon', 'full'],
         'quick attack': [10, 'enemy', 'weapon', 'half'],
+        'double attack': [30, 'enemy', 'weapon', 'full'],
         'knights attack': [20, 'enemy', 'knight', 'full'],
         'freeze': [30, 'enemy', 'infinite', 'full'],
         'electrocute': [30, 'enemy', 'infinite', 'full'],
@@ -35,6 +36,8 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'manaburn': [30, 'enemy', 'infinite', 'full'],
         'poison': [30, 'enemy', 'infinite', 'full'],
         'invigorate': [40, 'ally', 'infinite', 'full'],
+        'heal': [40, 'ally', 'infinite', 'full'],
+        'regenerate': [40, 'ally', 'infinite', 'full'],
         'stun': [40, 'enemy', 'infinite', 'full']}
 
 # ToDo, add:
@@ -51,9 +54,6 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # bonus damage if allies are on opposing sides
 
 # new abilities:
-# double attack
-# heal
-# regenerate
 # mana gift
 # morale boost: time increase
 # cleanse: defensive removal of buffs
@@ -66,7 +66,6 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # stab back: spear attack + push back
 # axe pull: swap places with target + backstab attack
 # swirl: axe attack to all targets available
-# rookie charge: rook movement + attack
 # novices thunder: very weak attack spell with insane gains through level up
 
 # abilities level up:
@@ -87,6 +86,7 @@ buff_dict = {'freeze': 'frozen',
         'burn': 'burning',
         'manaburn': 'manaburning',
         'poison': 'poisoned',
+        'regenerate': 'regenerating',
         'invigorate': 'invigorated',
         'stun': 'stunned'}
 
@@ -110,8 +110,14 @@ class Ability():
         self.reach = ability_dict[name][2]
         self.time_usage = ability_dict[name][3]
         self.experience = 0
-        self.lvl_up_experience = 10
+        self.level_up_experience = 2
         self.level = 1
+    def level_up(self, choice):
+        self.possible_upgrades.pop(self.possible_upgrades.index(choice))
+        self.upgrades.append(choice)
+        print('level up called')
+        print(self.possible_upgrades)
+        print(self.upgrades)
 
 class Mate(FloatLayout):
     ''' the base class for characters, the mages moving on the PlayingField '''
@@ -358,9 +364,12 @@ class Mate(FloatLayout):
         ''' end the ability selection, performing the ability here '''
         self.change_mana(ability.manacost, 0)
         ability.experience += 1
-        if ability.experience >= ability.lvl_up_experience:
+        if ability.experience >= ability.level_up_experience:
             ability.level += 1
             ability.experience = 0
+            popup = LevelUpPopup(ability)
+            popup.open()
+            print('popup closed, continuing in end_ability')
         if ability.target_type == 'move':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
@@ -368,6 +377,8 @@ class Mate(FloatLayout):
         elif ability.base == 'pass':
             self.change_health(0, 10)
             self.change_mana(0, 10)
+        elif ability.base == 'heal':
+            target.change_health(0, 40)
         elif ability.base == 'summon ghost':
             self.parent.create_ghost(self.team, target)
         elif ability.base == 'attack' or ability == 'knights attack':
@@ -378,6 +389,9 @@ class Mate(FloatLayout):
             self.mana = 0.0
         elif ability.base == 'quick attack':
             self.attack(target, 0.5*self.base_damage)
+        elif ability.base == 'double attack':
+            self.attack(target, self.base_damage)
+            self.attack(target, self.base_damage)
         elif ability.base == 'electrocute':
             self.attack(target, 2.*self.base_damage)
             target.t += 0.5 * (target.max_t - target.t)
@@ -431,6 +445,36 @@ class Mate(FloatLayout):
     def die(self):
         ''' called when the mate dies '''
         self.parent.remove_mate(self)
+
+class LevelUpPopup(Popup):
+    ''' a Popup used to level up an Ability '''
+    choice1 = StringProperty()
+    choice2 = StringProperty()
+    choice3 = StringProperty()
+    def __init__(self, ability, **kwargs):
+        super().__init__(*kwargs)
+        self.ability = ability
+        try:
+            self.choice1 = self.ability.possible_upgrades[0]
+        except IndexError:
+            self.choice1 = 'BACK'
+        try:
+            self.choice2 = self.ability.possible_upgrades[1]
+        except IndexError:
+            self.choice2 = 'not available'
+        try:
+            self.choice3 = self.ability.possible_upgrades[2]
+        except IndexError:
+            self.choice3 = 'not available'
+    def on_release1(self):
+        self.ability.level_up(self.choice1)
+        self.dismiss()
+    def on_release2(self):
+        self.ability.level_up(self.choice2)
+        self.dismiss()
+    def on_release3(self):
+        self.ability.level_up(self.choice3)
+        self.dismiss()
 
 class InfoPopup(Popup):
     ''' a Popup showing some information about the Mate '''
@@ -490,6 +534,8 @@ class Buff(Widget):
             self.t -= 1
             if self.mode == 'poisoned':
                 self.parent.change_health(0, -2.*self.parent.health_regen)
+            if self.mode == 'regenerating':
+                self.parent.change_health(0, self.stacks*self.parent.health_regen)
             if self.mode == 'burning':
                 self.parent.change_health(self.stacks*0.02, 0)
             if self.mode == 'manaburning':
@@ -554,12 +600,12 @@ class PlayingField(GridLayout):
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
         self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'axe', 2)
-        self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'longsword', 3)
-        self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 'wand and buckler', 4)
+        #self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'longsword', 3)
+        #self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 'wand and buckler', 4)
 
-        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 'spear', 44)
-        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 'axe', 45)
-        self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 'magic staff', 46)
+        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 'spear', 44)
+        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 'axe', 45)
+        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 'magic staff', 46)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
