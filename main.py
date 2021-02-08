@@ -24,8 +24,9 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'summon ghost': [100, 'summon', 'infinite', 'full'],
         'pass': [0, 'none', 'none', 'half'],
         'attack': [0, 'enemy', 'weapon', 'full'],
-        'rookie charge': [20, 'all', 'rook', 'full'],
-        'bishop charge': [20, 'all', 'bishop', 'full'],
+        'axe pull': [30, 'enemy', 'weapon', 'full'],
+        'rookie charge': [20, 'move', 'rook', 'full'],
+        'bishop charge': [20, 'move', 'bishop', 'full'],
         'mana strike': [0, 'enemy', 'weapon', 'full'],
         'quick attack': [10, 'enemy', 'weapon', 'half'],
         'double attack': [30, 'enemy', 'weapon', 'full'],
@@ -64,7 +65,6 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # powershot: bow attack + push back
 # piercing shot: bow attack + bow attack to target behind
 # stab back: spear attack + push back
-# axe pull: swap places with target + backstab attack
 # swirl: axe attack to all targets available
 # novices thunder: very weak attack spell with insane gains through level up
 
@@ -100,24 +100,35 @@ weapon_dict = {'longsword': 30,
         'magic staff': 10,
         'wand and buckler': 5}
 
+# a dictionary with the available upgrades for an Ability
+ability_upgrades_dict = {'freeze': ['stunning freeze', 'everlasting freeze', 'freeze blade'],
+        'burn': ['stacking burn', 'everlasting burn', 'burn blade'],
+        'manaburn': ['mana steal', 'strong manaburn', 'manaburn blade']}
+
 class Ability():
     def __init__(self, name):
         self.base = name
         self.upgrades = [name]
-        self.possible_upgrades = ['test1', 'test2', 'test3']
+        try:
+            self.possible_upgrades = ability_upgrades_dict[name]
+            self.level_up_experience = 2
+        except KeyError:
+            self.possible_upgrades = ['test1', 'test2', 'test3']
+            self.level_up_experience = 100
         self.manacost = ability_dict[name][0]
         self.target_type = ability_dict[name][1]
         self.reach = ability_dict[name][2]
         self.time_usage = ability_dict[name][3]
         self.experience = 0
-        self.level_up_experience = 2
         self.level = 1
     def level_up(self, choice):
-        self.possible_upgrades.pop(self.possible_upgrades.index(choice))
-        self.upgrades.append(choice)
-        print('level up called')
-        print(self.possible_upgrades)
-        print(self.upgrades)
+        try:
+            self.possible_upgrades.pop(self.possible_upgrades.index(choice))
+            if not self.possible_upgrades:
+                self.level_up_experience = np.infty
+            self.upgrades.append(choice)
+        except ValueError:
+            pass
 
 class Mate(FloatLayout):
     ''' the base class for characters, the mages moving on the PlayingField '''
@@ -143,7 +154,10 @@ class Mate(FloatLayout):
         self.mana = self.max_mana
         self.t = random.randint(0,99)
         self.team = team
-        self.abilities = abilities
+        self.abilities = [Ability('move'), Ability('attack')]
+        for abil in abilities:
+            self.abilities.append(Ability(abil))
+        self.abilities.append(Ability('pass'))
         self.weapon = weapon
         self.base_damage = weapon_dict[weapon]
 
@@ -173,7 +187,7 @@ class Mate(FloatLayout):
         for child in self.children:
             try:
                 if child.mode == 'freeze blade' or child.mode == 'burn blade' or child.mode == 'manaburn blade':
-                    target.create_buff(child.ability)
+                    target.create_buff(child.ability, self)
             except AttributeError:
                 pass
         target.change_health(damage, 0)
@@ -186,16 +200,16 @@ class Mate(FloatLayout):
         popup = InfoPopup(self)
         popup.open()
 
-    def create_buff(self, ability):
+    def create_buff(self, ability, source):
         ''' add a new buff to the Mate '''
         buff_found = False
         for child in self.children:
             if type(child) is Buff:
                 if child.mode == buff_dict[ability.base]:
-                    child.apply_buff(self)
+                    child.apply_buff(ability, source, self)
                     buff_found = True
         if buff_found == False:
-            self.add_widget(Buff(ability, self))
+            self.add_widget(Buff(ability, source, self))
 
     def remove_buff(self, buff):
         ''' remove a buff from the Mate '''
@@ -354,7 +368,8 @@ class Mate(FloatLayout):
                     if self.team == child.team:
                         child.create_select_button(self, ability)
             if ability.target_type == 'all':
-                child.create_select_button(self, ability)
+                if type(child) is Mate:
+                    child.create_select_button(self, ability)
 
     def start_ability(self, ability):
         ''' initiate the target selection '''
@@ -369,7 +384,6 @@ class Mate(FloatLayout):
             ability.experience = 0
             popup = LevelUpPopup(ability)
             popup.open()
-            print('popup closed, continuing in end_ability')
         if ability.target_type == 'move':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
@@ -382,6 +396,9 @@ class Mate(FloatLayout):
         elif ability.base == 'summon ghost':
             self.parent.create_ghost(self.team, target)
         elif ability.base == 'attack' or ability == 'knights attack':
+            self.attack(target, self.base_damage)
+        elif ability.base == 'axe pull':
+            self.parent.switch_positions_by_ref(self, target)
             self.attack(target, self.base_damage)
         elif ability.base == 'mana strike':
             damage = (1. + 0.02 * self.mana) * self.base_damage
@@ -396,7 +413,7 @@ class Mate(FloatLayout):
             self.attack(target, 2.*self.base_damage)
             target.t += 0.5 * (target.max_t - target.t)
         else:
-            target.create_buff(ability)
+            target.create_buff(ability, self)
         self.end_turn(ability)
 
     def start_turn(self):
@@ -446,35 +463,33 @@ class Mate(FloatLayout):
         ''' called when the mate dies '''
         self.parent.remove_mate(self)
 
+class LevelUpButton(Button):
+    ''' Button in LevelUpPopup '''
+    upgrade = StringProperty()
+    def __init__(self, upgrade, popup, **kwargs):
+        super().__init__(**kwargs)
+        self.upgrade = upgrade
+        self.popup = popup
+    def lub_on_release(self):
+        self.popup.ability.level_up(self.upgrade)
+        self.popup.dismiss()
+
+class LevelUpLayout(BoxLayout):
+    ''' Layout in the LevelUpPopup '''
+    def __init__(self, ability, popup, **kwargs):
+        super().__init__(**kwargs)
+        for upgrade in ability.possible_upgrades:
+            self.add_widget(LevelUpButton(upgrade, popup))
+
 class LevelUpPopup(Popup):
     ''' a Popup used to level up an Ability '''
     choice1 = StringProperty()
     choice2 = StringProperty()
     choice3 = StringProperty()
     def __init__(self, ability, **kwargs):
-        super().__init__(*kwargs)
+        super().__init__(**kwargs)
         self.ability = ability
-        try:
-            self.choice1 = self.ability.possible_upgrades[0]
-        except IndexError:
-            self.choice1 = 'BACK'
-        try:
-            self.choice2 = self.ability.possible_upgrades[1]
-        except IndexError:
-            self.choice2 = 'not available'
-        try:
-            self.choice3 = self.ability.possible_upgrades[2]
-        except IndexError:
-            self.choice3 = 'not available'
-    def on_release1(self):
-        self.ability.level_up(self.choice1)
-        self.dismiss()
-    def on_release2(self):
-        self.ability.level_up(self.choice2)
-        self.dismiss()
-    def on_release3(self):
-        self.ability.level_up(self.choice3)
-        self.dismiss()
+        self.add_widget(LevelUpLayout(ability, self))
 
 class InfoPopup(Popup):
     ''' a Popup showing some information about the Mate '''
@@ -504,20 +519,37 @@ class Buff(Widget):
     ''' a widget used to save permanent and temporary changes (buffs/debuffs) on a Mate '''
     t = 0.
     stacks = 0
-    def __init__(self, ability, target, **kwargs):
+    def __init__(self, ability, source, target, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
         self.mode = buff_dict[ability.base]
-        self.apply_buff(ability, target)
+        self.apply_buff(ability, source, target)
 
-    def apply_buff(self, ability, target):
+    def apply_buff(self, ability, source, target):
         self.stacks += 1
         self.t += 200.
+
         if ability.base == 'freeze':
-            target.t = 0.5 * target.t
+            if 'stunning freeze' in ability.upgrades:
+                target.create_buff(Ability('stun'), self)
+            else:
+                target.t = 0.5 * target.t
+            if 'everlasting freeze' in ability.upgrades:
+                self.t = np.infty
             target.max_t += 10
+
+        if ability.base == 'burn':
+            if 'everlasting burn' in ability.upgrades:
+                self.t = np.infty
+
         if ability.base == 'manaburn':
-            target.change_mana(40, 0)
+            manacost = 30
+            if 'strong manaburn' in ability.upgrades:
+                manacost = 60
+            if 'mana steal' in ability.upgrades:
+                source.change_mana(0, min(manacost, target.mana))
+            target.change_mana(manacost, 0)
+
         if ability.base == 'stun':
             self.t = np.infty
 
@@ -537,7 +569,10 @@ class Buff(Widget):
             if self.mode == 'regenerating':
                 self.parent.change_health(0, self.stacks*self.parent.health_regen)
             if self.mode == 'burning':
-                self.parent.change_health(self.stacks*0.02, 0)
+                if 'stacking burn' in self.ability.upgrades:
+                    self.parent.change_health(self.stacks*0.2, 0)
+                else:
+                    self.parent.change_health(0.2, 0)
             if self.mode == 'manaburning':
                 self.parent.change_health(0, -self.stacks*self.parent.mana_regen)
             if self.mode == 'stunned':
@@ -599,13 +634,8 @@ class PlayingField(GridLayout):
         self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'axe', 2)
-        #self.create_mate(1, [Ability('move'), Ability('bishop charge'), Ability('pass')], 'longsword', 3)
-        #self.create_mate(1, [Ability('move'), Ability('attack'), Ability('manaburn')], 'wand and buckler', 4)
-
-        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('poison')], 'spear', 44)
-        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('invigorate')], 'axe', 45)
-        #self.create_mate(2, [Ability('move'), Ability('attack'), Ability('mana strike')], 'magic staff', 46)
+        self.create_mate(1, ['freeze', 'burn'], 'axe', 1)
+        self.create_mate(2, ['freeze', 'burn'], 'axe', 3)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
