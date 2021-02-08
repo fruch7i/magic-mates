@@ -5,7 +5,7 @@
 <AbilityPrompt>:
 	Button:
 		on_release: root.ap_on_release()
-		text: root.ability
+		text: root.name
 
 <SelectButton>:
 	pos_hint: {'x':0.25, 'y':0.25}
@@ -30,6 +30,8 @@
 			text: root.time_label
 		Label:
 			text: root.dmg_label
+		Label:
+			text: root.abilities_label
 		Label:
 			text: root.buff_label
 		Button:
