@@ -30,6 +30,8 @@ cols = 7
 #   distinct mates
 
 ability_dict = {'move': [0, 'move', 'axe', 'half'],
+        'shield bash': [0, 'enemy', 'sword and shield', 'half'],
+        'stab back': [0, 'enemy', 'spear', 'half'],
         'knights move': [20, 'move', 'knight', 'half'],
         'teleport': [50, 'move', 'infinite', 'full'],
         'summon ghost': [100, 'summon', 'infinite', 'full'],
@@ -39,7 +41,7 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'rookie charge': [20, 'move', 'rook', 'full'],
         'bishop charge': [20, 'move', 'bishop', 'full'],
         'mana strike': [0, 'enemy', 'weapon', 'full'],
-        'quick attack': [10, 'enemy', 'weapon', 'half'],
+        'quick attack': [30, 'enemy', 'weapon', 'half'],
         'double attack': [60, 'enemy', 'weapon', 'full'],
         'knights attack': [20, 'enemy', 'knight', 'full'],
         'freeze': [30, 'enemy', 'infinite', 'full'],
@@ -54,6 +56,7 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'mana gift': [30, 'ally', 'infinite', 'full'],
         'morale raise': [30, 'ally', 'infinite', 'full'],
         'regenerate': [40, 'ally', 'infinite', 'full'],
+        'novices thunder': [50, 'enemy', 'infinite', 'full'],
         'stun': [40, 'enemy', 'infinite', 'full']}
 
 # ToDo, add:
@@ -70,17 +73,13 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # bonus damage if allies are on opposing sides
 
 # new abilities:
-# shield bash: attack + push back
 # shield raise: damage reduction increase
+# life bond: taking damage for allies
 # magic shield: blocking next status_effect application
 # powershot: bow attack + push back
 # piercing shot: bow attack + bow attack to target behind
-# stab back: spear attack + push back
 # swirl: axe attack to all targets available
 # novices thunder: very weak attack spell with insane gains through level up
-
-# abilities level up:
-# regenerate: regenerate all
 
 # inkscape images of wizards
 # wizards with different weapons
@@ -110,10 +109,13 @@ weapon_dict = {'longsword': 30,
 # a dictionary with the available upgrades for an Ability
 ability_upgrades_dict = {'freeze': ['stunning freeze', 'everlasting freeze', 'freeze blade'],
         'burn': ['stacking burn', 'everlasting burn', 'burn blade'],
+        'quick attack': ['remove manacost', 'damage increase'],
         'heal': ['heal all', 'cleanse', 'stronger heal'],
         'cleanse': ['cleanse all', 'cleanse debuffs', 'quicken'],
-        'purge': ['purge all', 'purge buffs', 'steal'],
-        'double attack': ['triple attack', 'more damage', 'reduced manacost'],
+        'purge': ['purge all', 'purge buffs', 'quicken'],
+        'double attack': ['triple attack', 'increase damage', 'reduce manacost'],
+        'morale raise': ['cleanse', 'quicken'],
+        'novices thunder': ['purge', 'reduce manacost', 'quicken', 'increase damage', 'add strike', 'add random target'],
         'manaburn': ['mana steal', 'strong manaburn', 'manaburn blade']}
 
 class Ability():
@@ -132,8 +134,10 @@ class Ability():
         self.experience = 0
         self.level = 1
     def level_up(self, upgrade):
-        if upgrade == 'reduced manacost':
-            self.manacost = 30
+        if upgrade == 'remove manacost':
+            self.manacost = 0.
+        if upgrade == 'reduce manacost':
+            self.manacost = 0.5 * self.manacost
         try:
             self.possible_upgrades.pop(self.possible_upgrades.index(upgrade))
             if not self.possible_upgrades:
@@ -159,6 +163,8 @@ class Mate(FloatLayout):
     team = NumericProperty(0)
     weapon = StringProperty('')
     base_damage = 0
+    damage_reduction_front = 0.
+    damage_reduction_side = 0.
 
     def __init__(self, team, abilities, weapon, **kwargs):
         super().__init__(**kwargs)
@@ -172,6 +178,12 @@ class Mate(FloatLayout):
         self.abilities.append(Ability('pass'))
         self.weapon = weapon
         self.base_damage = weapon_dict[weapon]
+        if weapon == 'sword and shield':
+            self.damage_reduction_front = 0.5
+            self.damage_reduction_side = 0.25
+        if weapon == 'axe and buckler' or weapon == 'wand and buckler':
+            self.damage_reduction_front = 0.2
+            self.damage_reduction_side = 0.1
 
     def change_health(self, damage, heal):
         self.health = self.health - damage + heal
@@ -252,6 +264,47 @@ class Mate(FloatLayout):
     def create_select_button(self, source, ability):
         ''' create a SelectButton on this Mate, so that it can be selected as a target by other Mates '''
         self.add_widget(SelectButton(source, ability))
+
+    def push_back(self, target):
+        ''' push an enemy Mate back '''
+        # bug: pushes over borders
+        self_index = self.parent.children[:].index(self)
+        target_index = self.parent.children[:].index(target)
+
+        self_row = self_index%cols
+        self_col = (self_index-self_row)/cols
+
+        target_row = target_index%cols
+        target_col = (target_index-target_row)/cols
+
+        if self_row == target_row:
+            if self_col < target_col:
+                push = cols
+            else:
+                push = -cols
+        elif self_col == target_col:
+            if self_row < target_row:
+                push = 1
+            else:
+                push = -1
+        elif self_row < target_row:
+            if self_col < target_col:
+                push = cols+1
+            else:
+                push = -cols+1
+        elif self_row > target_row:
+            if self_col > target_col:
+                push = -cols-1
+            else:
+                push = cols-1
+        print('push: {}'.format(push))
+
+        push_index = target_index + push
+        print('push_index: {}'.format(push_index))
+        print('target_index: {}'.format(target_index))
+
+        if type(self.parent.children[:][push_index]) is EmptyField:
+            self.parent.switch_positions(target_index, push_index)
 
     def create_select_buttons(self, ability):
         ''' create select buttons based on the ability used '''
@@ -420,6 +473,12 @@ class Mate(FloatLayout):
             popup.open()
         if ability.target_type == 'move':
             self.parent.switch_positions_by_ref(self, target)
+        elif ability.base == 'shield bash':
+            self.attack(target, 0.5*self.base_damage)
+            self.push_back(target)
+        elif ability.base == 'stab back':
+            self.attack(target, 0.5*self.base_damage)
+            self.push_back(target)
         elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'pass':
@@ -439,6 +498,21 @@ class Mate(FloatLayout):
             target.change_mana(0, 30)
         elif ability.base == 'morale raise':
             target.t += 0.5 * (target.max_t - target.t)
+            if 'cleanse' in ability.upgrades:
+                target.remove_random_status_effect(sign='debuff')
+        elif ability.base == 'novices thunder':
+            damage = 5
+            if 'increase damage' in ability.upgrades:
+                damage = 10
+            possible_targets = self.parent.children[:]
+            possible_targets = [target for target in possible_targets if type(target) == Mate and self.team != target.team]
+            targets = [target]
+            if 'add random target' in ability.upgrades:
+                targets.append(random.choice(possible_targets))
+            for target in targets:
+                target.change_health(damage, 0)
+                if 'purge' in ability.upgrades:
+                    target.remove_random_status_effect(sign='buff')
         elif ability.base == 'cleanse':
             sign = True
             if 'cleanse debuffs' in ability.upgrades:
@@ -469,10 +543,13 @@ class Mate(FloatLayout):
             self.attack(target, damage)
             self.mana = 0.0
         elif ability.base == 'quick attack':
-            self.attack(target, 0.5*self.base_damage)
+            modifier = 0.5
+            if 'increase damage' in ability.upgrades:
+                modifier = 0.75
+            self.attack(target, modifier*self.base_damage)
         elif ability.base == 'double attack':
             modifier = 0.6
-            if 'more damage' in ability.upgrades:
+            if 'increase damage' in ability.upgrades:
                 modifier = 0.8
             self.attack(target, modifier * self.base_damage)
             self.attack(target, modifier * self.base_damage)
@@ -704,8 +781,8 @@ class PlayingField(GridLayout):
         self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1, ['freeze', 'burn'], 'axe', 1)
-        self.create_mate(2, ['cleanse', 'burn'], 'axe', 3)
+        self.create_mate(1, ['shield bash', 'burn'], 'axe', 1)
+        self.create_mate(2, ['novices thunder', 'burn'], 'axe', 3)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
