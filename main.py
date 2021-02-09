@@ -18,6 +18,17 @@ cols = 7
 
 # a dictionary with all abilities, used to init the Ability class
 # key: base name *** 0: manacost *** 1: target_type *** 2: reach *** 3: time_usage
+# target_types:
+# EmptyField
+# Mate
+#   enemy
+#   ally
+# Multiple Mates:
+#   all enemies
+#   all allies
+#   all mates
+#   distinct mates
+
 ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'knights move': [20, 'move', 'knight', 'half'],
         'teleport': [50, 'move', 'infinite', 'full'],
@@ -41,7 +52,7 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'invigorate': [40, 'ally', 'infinite', 'full'],
         'heal': [40, 'ally', 'infinite', 'full'],
         'mana gift': [30, 'ally', 'infinite', 'full'],
-        'morale raise': [30, 'ally', 'infinite', 'full']
+        'morale raise': [30, 'ally', 'infinite', 'full'],
         'regenerate': [40, 'ally', 'infinite', 'full'],
         'stun': [40, 'enemy', 'infinite', 'full']}
 
@@ -61,7 +72,7 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # new abilities:
 # shield bash: attack + push back
 # shield raise: damage reduction increase
-# magic shield: blocking next buff application
+# magic shield: blocking next status_effect application
 # powershot: bow attack + push back
 # piercing shot: bow attack + bow attack to target behind
 # stab back: spear attack + push back
@@ -71,22 +82,20 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
 # abilities level up:
 # regenerate: regenerate all
 
-# cleanse and purge need a function - cleanse random, cleanse positive and negative, cleanse all, there are many distinctions
-
 # inkscape images of wizards
 # wizards with different weapons
 # load images based on weapon
 # team 1: black drawing on white background
 # team 2: white drawing on black background
 
-# a dictionary with the connection between abilities and their respective applied buffs
-buff_dict = {'freeze': 'frozen',
-        'burn': 'burning',
-        'manaburn': 'manaburning',
-        'poison': 'poisoned',
-        'regenerate': 'regenerating',
-        'invigorate': 'invigorated',
-        'stun': 'stunned'}
+# a dictionary with the connection between abilities and their respective applied status_effects
+status_effect_dict = {'freeze': ['frozen', 'debuff'],
+        'burn': ['burning', 'debuff'],
+        'manaburn': ['manaburning', 'debuff'],
+        'poison': ['poisoned', 'debuff'],
+        'regenerate': ['regenerating', 'buff'],
+        'invigorate': ['invigorated', 'buff'],
+        'stun': ['stunned', 'debuff']}
 
 # a dictionary mapping weapon to its base_damage
 weapon_dict = {'longsword': 30,
@@ -102,6 +111,8 @@ weapon_dict = {'longsword': 30,
 ability_upgrades_dict = {'freeze': ['stunning freeze', 'everlasting freeze', 'freeze blade'],
         'burn': ['stacking burn', 'everlasting burn', 'burn blade'],
         'heal': ['heal all', 'cleanse', 'stronger heal'],
+        'cleanse': ['cleanse all', 'cleanse debuffs', 'quicken'],
+        'purge': ['purge all', 'purge buffs', 'steal'],
         'double attack': ['triple attack', 'more damage', 'reduced manacost'],
         'manaburn': ['mana steal', 'strong manaburn', 'manaburn blade']}
 
@@ -182,13 +193,13 @@ class Mate(FloatLayout):
             try:
                 if child.mode == 'invigorated':
                     damage = child.stacks * damage
-                    self.remove_buff(child)
+                    self.remove_status_effect(child)
             except AttributeError:
                 pass
         for child in self.children:
             try:
                 if child.mode == 'freeze blade' or child.mode == 'burn blade' or child.mode == 'manaburn blade':
-                    target.create_buff(child.ability, self)
+                    target.create_status_effect(child.ability, self)
             except AttributeError:
                 pass
         target.change_health(damage, 0)
@@ -201,20 +212,42 @@ class Mate(FloatLayout):
         popup = InfoPopup(self)
         popup.open()
 
-    def create_buff(self, ability, source):
-        ''' add a new buff to the Mate '''
-        buff_found = False
+    def create_status_effect(self, ability, source):
+        ''' add a new status_effect to the Mate '''
+        status_effect_found = False
         for child in self.children:
-            if type(child) is Buff:
-                if child.mode == buff_dict[ability.base]:
-                    child.apply_buff(ability, source, self)
-                    buff_found = True
-        if buff_found == False:
-            self.add_widget(Buff(ability, source, self))
+            if type(child) is StatusEffect:
+                if child.mode == status_effect_dict[ability.base][0]:
+                    child.apply_status_effect(ability, source, self)
+                    status_effect_found = True
+        if status_effect_found == False:
+            self.add_widget(StatusEffect(ability, source, self))
 
-    def remove_buff(self, buff):
-        ''' remove a buff from the Mate '''
-        self.remove_widget(buff)
+    def remove_status_effect(self, status_effect):
+        ''' remove a StatusEffect by reference '''
+        status_effect.remove_status_effect()
+
+    def remove_random_status_effect(self, sign=True):
+        ''' remove a single StatusEffect from the Mate, can be discriminated by sign '''
+        print('Mate.remove_random_status_effect called')
+        status_effects = self.get_status_effects()
+        if not sign:
+            status_effects = [status_effect for status_effect in status_effects if status_effect.sign == sign]
+        if status_effects:
+            self.remove_widget(random.choice(status_effects))
+
+    def remove_status_effects(self, sign=True):
+        ''' remove all StatusEffects from the Mate, or discriminate by sign '''
+        status_effects = self.get_status_effects()
+        print(status_effects)
+        if not sign:
+            status_effects = [status_effect for status_effect in status_effects if status_effect.sign == sign]
+        for status_effect in status_effects:
+            self.remove_status_effect(status_effect)
+
+    def get_status_effects(self):
+        ''' get a list of all StatusEffects applied '''
+        return [child for child in self.children if type(child) is StatusEffect]
 
     def create_select_button(self, source, ability):
         ''' create a SelectButton on this Mate, so that it can be selected as a target by other Mates '''
@@ -347,7 +380,7 @@ class Mate(FloatLayout):
 
         elif reach == 'infinite' or reach == 'magic staff' or reach == 'wand and buckler':
             index_list = list(range(0, cols**2))
-            index_list.remove(index)
+            #index_list.remove(index)
 
         elif reach == 'none':
             index_list = [index]
@@ -407,9 +440,23 @@ class Mate(FloatLayout):
         elif ability.base == 'morale raise':
             target.t += 0.5 * (target.max_t - target.t)
         elif ability.base == 'cleanse':
-            for child in target.children[:]:
-                if type(child) is Buff:
-                    target.remove_buff(child)
+            sign = True
+            if 'cleanse debuffs' in ability.upgrades:
+                sign = 'debuff'
+            if 'cleanse all' in ability.upgrades:
+                target.remove_status_effects(sign=sign)
+            else:
+                target.remove_random_status_effect(sign=sign)
+        elif ability.base == 'purge':
+            sign = True
+            if 'purge buffs' in ability.upgrades:
+                sign = 'buff'
+            if 'steal' in ability.upgrades:
+                print('not yet implemented')
+            if 'purge all' in ability.upgrades:
+                target.remove_status_effects(sign=sign)
+            else:
+                target.remove_random_status_effect(sign=sign)
         elif ability.base == 'summon ghost':
             self.parent.create_ghost(self.team, target)
         elif ability.base == 'attack' or ability == 'knights attack':
@@ -435,7 +482,7 @@ class Mate(FloatLayout):
             self.attack(target, 2.*self.base_damage)
             target.t += 0.5 * (target.max_t - target.t)
         else:
-            target.create_buff(ability, self)
+            target.create_status_effect(ability, self)
         self.end_turn(ability)
 
     def start_turn(self):
@@ -450,7 +497,7 @@ class Mate(FloatLayout):
         ''' end the turn by resetting t and game.is_running, and removing all AbilityPrompts '''
         if ability.time_usage == 'full':
             self.t = 0.
-        elif ability.time_usage == 'half':
+        if ability.time_usage == 'half' or 'quicken' in ability.upgrades:
             self.t = 0.5 * self.max_t
         else:
             print('Error, ability.time_usage not valid')
@@ -517,7 +564,7 @@ class InfoPopup(Popup):
     mana_label = StringProperty()
     time_label = StringProperty()
     weapon_label = StringProperty()
-    buff_label = StringProperty()
+    status_effect_label = StringProperty()
     abilities_label = StringProperty()
     def __init__(self, mate, **kwargs):
         super().__init__(**kwargs)
@@ -529,28 +576,29 @@ class InfoPopup(Popup):
         self.abilities_label = "active Abilities: \n"
         for ability in mate.abilities:
             self.abilities_label += ability.base + ' ( lvl: ' + str(ability.level) + ' / exp: ' + str(ability.experience) + '/' + str(ability.level_up_experience) + ')' + '\n'
-        self.buff_label = "active Buffs: \n"
+        self.status_effect_label = "active status_effects: \n"
         for child in mate.children:
-            if type(child) is Buff:
-                self.buff_label += child.mode + '(' + str(child.stacks) + ') remaining time: ' + str(child.t) + '\n'
+            if type(child) is StatusEffect:
+                self.status_effect_label += child.mode + '(' + str(child.stacks) + ') remaining time: ' + str(child.t) + '\n'
 
-class Buff(Widget):
-    ''' a widget used to save permanent and temporary changes (buffs/debuffs) on a Mate '''
+class StatusEffect(Widget):
+    ''' a widget used to save permanent and temporary changes (status_effects/destatus_effects) on a Mate '''
     t = 0.
     stacks = 0
     def __init__(self, ability, source, target, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
-        self.mode = buff_dict[ability.base]
-        self.apply_buff(ability, source, target)
+        self.mode = status_effect_dict[ability.base][0]
+        self.sign = status_effect_dict[ability.base][1]
+        self.apply_status_effect(ability, source, target)
 
-    def apply_buff(self, ability, source, target):
+    def apply_status_effect(self, ability, source, target):
         self.stacks += 1
         self.t += 200.
 
         if ability.base == 'freeze':
             if 'stunning freeze' in ability.upgrades:
-                target.create_buff(Ability('stun'), self)
+                target.create_status_effect(Ability('stun'), self)
             else:
                 target.t = 0.5 * target.t
             if 'everlasting freeze' in ability.upgrades:
@@ -572,12 +620,15 @@ class Buff(Widget):
         if ability.base == 'stun':
             self.t = np.infty
 
-    def remove_buff(self):
+    def remove_status_effect(self):
+        print('StatusEffect.remove_status_effect called')
         if self.mode == 'frozen':
             mem_t = self.parent.t / self.parent.max_t
             self.parent.max_t -= self.stacks * 10
             self.parent.t = mem_t * self.parent.max_t
-        self.parent.remove_buff(self)
+            print(self.parent.t)
+            print(self.parent.max_t)
+        self.parent.remove_widget(self)
 
     def update(self, *args):
         game = App.get_running_app().root
@@ -597,9 +648,9 @@ class Buff(Widget):
             if self.mode == 'stunned':
                 self.parent.t -= 2.
                 if self.parent.t < 0:
-                    self.remove_buff()
+                    self.remove_status_effect()
             if self.t < 0.:
-                self.remove_buff()
+                self.remove_status_effect()
 
 class SelectButton(Button):
     ''' a button to select a target, either an EmptyField or a Mate '''
@@ -654,7 +705,7 @@ class PlayingField(GridLayout):
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
         self.create_mate(1, ['freeze', 'burn'], 'axe', 1)
-        self.create_mate(2, ['freeze', 'burn'], 'axe', 3)
+        self.create_mate(2, ['cleanse', 'burn'], 'axe', 3)
 
     def switch_positions(self, index1, index2):
         ''' switch positions of two children '''
