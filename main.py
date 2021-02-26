@@ -30,16 +30,21 @@ cols = 7
 #   distinct mates
 
 ability_dict = {'move': [0, 'move', 'axe', 'half'],
-        'shield raise': [30, 'ally', 'none', 'full'],
+        'shield raise': [30, 'ally', 'self', 'full'],
         'shield bash': [30, 'enemy', 'sword and shield', 'full'],
         'stab back': [30, 'enemy', 'spear', 'full'],
         'powershot': [30, 'enemy', 'bow', 'full'],
-        'multishot': [30, 'enemy', 'bow', 'full'],
+        'multishot': [30, 'all enemies', 'bow', 'full'],
         'knights move': [20, 'move', 'knight', 'half'],
         'teleport': [50, 'move', 'infinite', 'full'],
-        'summon ghost': [100, 'summon', 'infinite', 'full'],
-        'pass': [0, 'none', 'none', 'half'],
+        'summon zombie': [50, 'summon', 'axe', 'full'],
+        'summon golem': [50, 'summon', 'axe', 'full'],
+        'summon ghost': [50, 'summon', 'axe', 'full'],
+        'summon vampire': [50, 'summon', 'axe', 'full'],
+        'summon shadow': [100, 'summon', 'axe', 'full'],
+        'pass': [0, 'self', 'self', 'half'],
         'attack': [0, 'enemy', 'weapon', 'full'],
+        'pierce attack': [40, 'enemy', 'weapon', 'full'],
         'axe pull': [30, 'enemy', 'weapon', 'full'],
         'shield breaker': [40, 'enemy', 'weapon', 'full'],
         'rookie charge': [20, 'move', 'rook', 'full'],
@@ -57,30 +62,24 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'purge': [20, 'enemy', 'infinite', 'full'],
         'invigorate': [40, 'ally', 'infinite', 'full'],
         'heal': [40, 'ally', 'infinite', 'full'],
+        'health gift': [25, 'ally', 'infinite', 'full'],
         'mana gift': [30, 'ally', 'infinite', 'full'],
         'morale raise': [30, 'ally', 'infinite', 'full'],
         'regenerate': [40, 'ally', 'infinite', 'full'],
         'novices thunder': [50, 'enemy', 'infinite', 'full'],
+        'vampiric bite': [30, 'enemy', 'weapon', 'full'],
+        'sacrificial attack': [30, 'enemy', 'weapon', 'full'],
         'stun': [40, 'enemy', 'infinite', 'full']}
 
 # ToDo, add:
-# weapon differences:
-# sword and shield: range: +1, +col, damage reduction from front (50%) and side (25%)
-# axe: range: +1, +col, +1+col
-# axe and buckler: lower damage output, damage reduction from front (20%) and side (10%)
-# spear: range: +1, +2, +col, +2col, +1+col
-# bow: range: till obstacle, maybe like queen only
-# magic staff: range: infinite
-# wand and buckler: range infinite, deals very little damage, grants damage reduction from front (20%) and side (10%)
+# improve target handling of allies, enemies, self, all mates etc
 
 # flanking bonus damage:
 # bonus damage if allies are on opposing sides
 
 # new abilities:
-# shield raise: damage reduction increase
 # life bond: taking damage for allies
 # magic shield: blocking next status_effect application
-# powershot: bow attack + push back
 # multishot: bow attack to all available targets
 # swirl: axe attack to all targets available
 # novices thunder: very weak attack spell with insane gains through level up
@@ -183,7 +182,10 @@ class Mate(FloatLayout):
 
     max_health = 100.0
     health = NumericProperty(1.0)
-    health_regen = 0.1
+    health_regen = 0.02
+
+    max_armor = 100.0
+    armor = NumericProperty(1.0)
 
     max_mana = 100.0
     mana = NumericProperty(1.0)
@@ -194,6 +196,11 @@ class Mate(FloatLayout):
     base_damage = 0
     damage_reduction_front = 0.
     damage_reduction_side = 0.
+
+    armor_block_front = 0.66
+    armor_block_side = 0.33
+
+    button_normal_path = StringProperty('')
 
     def __init__(self, team, abilities, weapon, **kwargs):
         super().__init__(**kwargs)
@@ -210,16 +217,41 @@ class Mate(FloatLayout):
         if weapon == 'sword and shield':
             self.damage_reduction_front = 0.5
             self.damage_reduction_side = 0.25
-        if weapon == 'axe and buckler' or weapon == 'wand and buckler':
+            self.armor = self.max_armor
+        elif 'buckler' in weapon:
             self.damage_reduction_front = 0.2
             self.damage_reduction_side = 0.1
+            self.armor = 0.66 * self.max_armor
+        else:
+            self.armor = 0.33 * self.max_armor
+        self.button_normal_path = 'gfx/' + str(self.team) + '_' + self.weapon.replace(' ', '_') + '.png'
+        
+    def change_health(self, damage, heal, source = None, pierce = False):
+        if pierce:
+            armor_block_front = 0.
+            armor_block_side = 0.
+        else:
+            armor_block_front = self.armor_block_front
+            armor_block_side = self.armor_block_side
 
-    def change_health(self, damage, heal, source = None):
         if source:
             if get_direction(self, source) == 'front':
                 damage = (1-self.damage_reduction_front) * damage
-            if get_direction(self, source) == 'side':
+                armor_damage = armor_block_front * damage
+                damage = (1-armor_block_front) * damage
+            elif get_direction(self, source) == 'side':
                 damage = (1-self.damage_reduction_side) * damage
+                armor_damage = armor_block_side * damage
+                damage = (1-armor_block_side) * damage
+            else:
+                armor_damage = 0
+        else:
+            armor_damage = 0
+        if armor_damage > self.armor:
+            damage += armor_damage - self.armor
+            self.armor = 0
+        else:
+            self.armor -= armor_damage
         self.health = self.health - damage + heal
         if self.health < 0.:
             self.die()
@@ -233,7 +265,7 @@ class Mate(FloatLayout):
         if self.mana > self.max_mana:
             self.mana = self.max_mana
 
-    def attack(self, target, damage):
+    def attack(self, target, damage, pierce = False):
         ''' attacking a target Mate '''
         self_status_effects = [child for child in self.children if type(child) == StatusEffect]
         target_status_effects = [child for child in target.children if type(child) == StatusEffect]
@@ -246,11 +278,11 @@ class Mate(FloatLayout):
                 target.create_status_effect(status_effect.ability, self)
         for status_effect in target_status_effects:
             mode = status_effect.mode
-            if mode == 'raise shield':
+            if mode == 'shield raise':
                 if 'counter attack' in status_effect.ability.upgrades:
                     self.change_health(target.base_damage, 0, source = target)
                     # bug: counter attack has infinite reach, does not apply ability blades and also triggers from backside
-        target.change_health(damage, 0, source = self)
+        target.change_health(damage, 0, source = self, pierce = pierce)
 
     def ma_on_release(self):
         self.show_details_popup()
@@ -277,7 +309,6 @@ class Mate(FloatLayout):
 
     def remove_random_status_effect(self, sign=True):
         ''' remove a single StatusEffect from the Mate, can be discriminated by sign '''
-        print('Mate.remove_random_status_effect called')
         status_effects = self.get_status_effects()
         if not sign:
             status_effects = [status_effect for status_effect in status_effects if status_effect.sign == sign]
@@ -287,7 +318,6 @@ class Mate(FloatLayout):
     def remove_status_effects(self, sign=True):
         ''' remove all StatusEffects from the Mate, or discriminate by sign '''
         status_effects = self.get_status_effects()
-        print(status_effects)
         if not sign:
             status_effects = [status_effect for status_effect in status_effects if status_effect.sign == sign]
         for status_effect in status_effects:
@@ -333,11 +363,8 @@ class Mate(FloatLayout):
                 push = -cols-1
             else:
                 push = cols-1
-        print('push: {}'.format(push))
 
         push_index = target_index + push
-        print('push_index: {}'.format(push_index))
-        print('target_index: {}'.format(target_index))
 
         if type(self.parent.children[:][push_index]) is EmptyField:
             self.parent.switch_positions(target_index, push_index)
@@ -352,39 +379,30 @@ class Mate(FloatLayout):
 
         if 'sword' in reach:
             index_list = self.parent.get_sword_index(self, ability.target_type)
-
         elif 'axe' in reach:
             index_list = self.parent.get_axe_index(self, ability.target_type)
-            
         elif 'spear' in reach:
             index_list = self.parent.get_spear_index(self, ability.target_type)
-
         elif 'bow' in reach:
             index_list = self.parent.get_queen_index(self, ability.target_type)
-
         elif 'knight' in reach:
             index_list = self.parent.get_knight_index(self, ability.target_type)
-
         elif reach == 'rook':
             index_list = self.parent.get_rook_index(self, ability.target_type)
-
         elif reach == 'bishop':
             index_list = self.parent.get_bishop_index(self, ability.target_type)
-
         elif reach == 'infinite' or reach == 'magic staff' or reach == 'wand and buckler':
             index_list = list(range(0, cols**2))
-
-        elif reach == 'none':
-            index_list = [index]
+        elif reach == 'self':
+            self.end_ability(ability, self)
+            index_list = []
 
         # create SelectButtons based on weather the abilities targeting type is move, enemy, ally or all mates
         for i in index_list:
             child = self.parent.children[i]
-            if ability.target_type == 'move' or ability.target_type == 'summon':
+            if ability.target_type == 'move' or 'summon' in ability.target_type:
                 if type(child) is EmptyField:
                     child.create_select_button(self, ability)
-            if ability.target_type == 'none':
-                self.end_ability(ability, self)
             if ability.target_type == 'enemy':
                 if type(child) is Mate:
                     if self.team != child.team:
@@ -399,7 +417,10 @@ class Mate(FloatLayout):
 
     def start_ability(self, ability):
         ''' initiate the target selection '''
-        self.create_select_buttons(ability)
+        if ability.target_type == 'self' or ability.target_type == 'all enemies' or ability.target_type == 'all allies':
+            self.end_ability(ability, None)
+        else:
+            self.create_select_buttons(ability)
 
     def end_ability(self, ability, target):
         ''' end the ability selection, performing the ability here '''
@@ -422,13 +443,18 @@ class Mate(FloatLayout):
             self.attack(target, 0.5*self.base_damage)
             self.push_back(target)
         elif ability.base == 'multishot':
-            targets = self.parent.get_queen_index(self, ability.target_type)
+            target_indices = self.parent.get_queen_index(self, ability.target_type)
+            targets = [self.parent.children[i] for i in target_indices]
+            for target in targets:
+                self.attack(target, self.base_damage)
+        elif ability.base == 'swirl':
+            targets = self.parent.get_axe_index(self, ability.target_type)
             for target in targets:
                 self.attack(target, self.base_damage)
         elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'pass':
-            self.change_health(0, 10)
+            self.change_health(0, 5)
             self.change_mana(0, 10)
         elif ability.base == 'heal':
             healing = 30
@@ -440,6 +466,9 @@ class Mate(FloatLayout):
                         target.change_health(0, healing)
             else:
                 target.change_health(0, healing)
+        elif ability.base == 'health gift':
+            target.change_health(0, 30)
+            self.change_health(30, 0)
         elif ability.base == 'mana gift':
             target.change_mana(0, 30)
         elif ability.base == 'morale raise':
@@ -477,10 +506,18 @@ class Mate(FloatLayout):
                 target.remove_status_effects(sign=sign)
             else:
                 target.remove_random_status_effect(sign=sign)
-        elif ability.base == 'summon ghost':
-            self.parent.create_ghost(self.team, target)
+        elif 'summon' in ability.base:
+            self.parent.create_summon(self.team, target, ability)
         elif ability.base == 'attack' or ability == 'knights attack':
             self.attack(target, self.base_damage)
+        elif ability.base == 'vampiric bite':
+            self.attack(target, self.base_damage)
+            self.change_health(0, self.base_damage)
+        elif ability.base == 'sacrificial attack':
+            self.attack(target, 2*self.base_damage)
+            self.change_health(self.base_damage, 0, pierce = True)
+        elif ability.base == 'pierce attack':
+            self.attack(target, self.base_damage, pierce = True)
         elif ability.base == 'axe pull':
             self.parent.switch_positions_by_ref(self, target)
             self.attack(target, self.base_damage)
@@ -652,7 +689,6 @@ class StatusEffect(Widget):
             self.t = np.infty
 
     def remove_status_effect(self):
-        print('StatusEffect.remove_status_effect called')
         if self.mode == 'frozen':
             mem_t = self.parent.t / self.parent.max_t
             self.parent.max_t -= self.stacks * 10
@@ -743,11 +779,13 @@ class PlayingField(GridLayout):
         self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1, ['bishop charge', 'rookie charge'], 'bow', 1)
-        self.create_mate(2, ['bishop charge', 'rookie charge'], 'bow', 3)
+        self.create_mate(1, ['summon zombie', 'summon ghost', 'summon golem'], 'axe', 1)
+        self.create_mate(2, ['pierce attack', 'sacrificial attack'], 'sword and shield', 12)
+        self.create_mate(2, ['pierce attack', 'sacrificial attack'], 'spear', 13)
+        self.create_mate(2, ['pierce attack', 'sacrificial attack'], 'magic staff', 14)
 
     def adjust_target_type(self, mate, index_list, target_type):
-        if target_type == 'move':
+        if target_type == 'move' or target_type == 'summon':
             return [index for index in index_list if type(self.children[index]) == EmptyField]
         else:
             index_list = [index for index in index_list if type(self.children[index]) == Mate]
@@ -902,13 +940,54 @@ class PlayingField(GridLayout):
         self.switch_positions(index+1, 0)
         self.remove_widget(self.children[0])
 
-    def create_ghost(self, team, target):
+    def create_summon(self, team, target, ability):
         ''' create a new Mate with lower stats '''
-        ghost = Mate(team, ['move', 'attack', 'pass'], 'axe')
-        ghost.max_health = 50
-        ghost.base_damage = 15
-        ghost.t = 1.
-        self.add_widget(ghost)
+        if ability.base == 'summon zombie':
+            summon = Mate(team, ['poison'], 'axe')
+            summon.max_health = 50
+            summon.health = 50
+            summon.max_armor = 25
+            summon.armor = 0
+            summon.max_mana = 50
+            summon.mana = 0
+            summon.weapon = 'axe'
+            summon.base_damage = 25
+        elif ability.base == 'summon vampire':
+            summon = Mate(team, ['vampiric bite', 'sacrificial attack'], 'axe')
+            summon.max_health = 100
+            summon.health = 50
+            summon.max_armor = 50
+            summon.armor = 0
+            summon.max_mana = 100
+            summon.mana = 0
+            summon.weapon = 'axe'
+            summon.base_damage = 15
+        elif ability.base == 'summon ghost':
+            summon = Mate(team, ['health gift', 'mana gift'], 'magic staff')
+            summon.max_health = 20
+            summon.health = 20
+            summon.max_armor = 10
+            summon.armor = 0
+            summon.max_mana = 50
+            summon.mana = 50
+            summon.weapon = 'magic staff'
+            summon.base_damage = 5
+        elif ability.base == 'summon golem':
+            summon = Mate(team, ['shield raise'], 'sword and shield')
+            summon.max_health = 100
+            summon.health = 100
+            summon.max_armor = 100
+            summon.armor = 100
+            summon.max_mana = 100
+            summon.mana = 0
+            summon.max_t = 150
+            summon.weapon = 'magic staff'
+            summon.base_damage = 15
+
+        summon.health_regen = 0
+        summon.t = 1.
+
+        self.add_widget(summon)
         index = self.children[:].index(target)
         self.switch_positions(index, 0)
         self.remove_widget(self.children[0])

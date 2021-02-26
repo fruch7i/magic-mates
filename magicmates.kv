@@ -56,28 +56,33 @@
 			pos: (self.x, self.y + self.height - 6)
 			size: (self.size[0] * self.health / self.max_health, 6)
 		Color:
-			rgba: (0, 0, 0.8, 1)
+			rgba: (0, 0.7, 0, 1) 
 		Rectangle:
 			pos: (self.x, self.y + self.height - 12)
+			size: (self.size[0] * self.armor / self.max_armor, 6)
+		Color:
+			rgba: (0, 0, 0.9, 1)
+
+		Rectangle:
+			pos: (self.x, self.y + self.height - 18)
 			size: (self.size[0] * self.mana / self.max_mana, 6)
 		Color:
 			rgba: (1., 1., 1., 1) if self.t < self.max_t else (0.8, 0.8, 0., 1)
 		Rectangle:
-			pos: (self.x, self.y + self.height - 18)
+			pos: (self.x, self.y + self.height - 24)
 			size: (self.size[0] * self.t / self.max_t, 6)
 	Button:
-		background_normal: ''
-		background_color: (0.2, 0.2, 0.2, 1) if root.team == 2 else (0.8, 0.8, 0.8, 1)
+		background_normal: root.button_normal_path
 		pos: (root.x+2, root.y+2)
 		size_hint: (None, None)
-		size: (root.width-4, root.height-20)
+		size: (root.width-4, root.height-26)
 		on_release: root.ma_on_release()
 
 
 <MagicMatesGame>:
 	orientation: 'vertical'
 	Label:
-		text: 'header'
+		text: 'MAGIC MATES'
 		size_hint: None, None
 		size: 900, 30
 	BasicBoxLayout:
@@ -90,4 +95,4 @@
 			id: ability_menu
 			orientation: 'vertical'
 			Label:
-				text: 'menu header'
+				text: 'Choose ability'
