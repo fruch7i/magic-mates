@@ -779,10 +779,15 @@ class PlayingField(GridLayout):
         self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.create_mate(1, ['summon zombie', 'summon ghost', 'summon golem'], 'axe', 1)
-        self.create_mate(2, ['pierce attack', 'sacrificial attack'], 'sword and shield', 12)
-        self.create_mate(2, ['pierce attack', 'sacrificial attack'], 'spear', 13)
-        self.create_mate(2, ['pierce attack', 'sacrificial attack'], 'magic staff', 14)
+        self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
+        self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)
+        self.create_mate(1, ['summon zombie', 'summon ghost', 'freeze'], 'magic staff', 4)
+        self.create_mate(1, ['multishot', 'pierce attack', 'knights move'], 'bow', 5)
+
+        self.create_mate(2, ['pierce attack', 'sacrificial attack', 'bishop charge'], 'longsword', 47)
+        self.create_mate(2, ['stab back', 'quick attack', 'double attack'], 'spear', 46)
+        self.create_mate(2, ['pierce attack', 'sacrificial attack', 'purge'], 'axe and buckler', 44)
+        self.create_mate(2, ['manaburn', 'burn', 'summon golem'], 'wand and buckler', 43)
 
     def adjust_target_type(self, mate, index_list, target_type):
         if target_type == 'move' or target_type == 'summon':
