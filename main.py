@@ -841,6 +841,7 @@ class PlayingField(GridLayout):
             index_list = [i for i in index_list if i%cols <= 3] # remove right border
         if index%cols == cols-1 or index%cols == cols-2:
             index_list = [i for i in index_list if i%cols >= cols-4] # remove left border
+        return self.adjust_target_type(mate, index_list, target_type)
 
     def get_bishop_index(self, mate, target_type):
         index = self.children[:].index(mate)
