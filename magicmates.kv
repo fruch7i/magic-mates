@@ -2,6 +2,31 @@
 
 <BasicBoxLayout>:
 
+<MenuScreen>:
+	BoxLayout:
+		orientation: 'vertical'
+		Button:
+			text: 'Start a match'
+			on_press: root.manager.current = 'board'
+		Button:
+			text: 'Quit'
+			on_press: App.get_running_app().stop()
+
+<BoardScreen>:
+	BasicBoxLayout:
+		orientation: 'vertical'
+		BasicBoxLayout:
+			size_hint: 1.0, 0.1
+			orientation: 'horizontal'
+			Label:
+				text: 'MAGIC MATES'
+			Button:
+				text: 'Menu'
+				on_press: root.manager.current = 'menu'
+		MagicMatesGame:
+			size_hint: 1.0, 0.9
+			id: game
+
 <AbilityPrompt>:
 	Button:
 		on_release: root.ap_on_release()
@@ -80,19 +105,13 @@
 
 
 <MagicMatesGame>:
-	orientation: 'vertical'
-	Label:
-		text: 'MAGIC MATES'
-		size_hint: None, None
-		size: 900, 30
-	BasicBoxLayout:
-		orientation: 'horizontal'
-		PlayingField:
-			id: playing_field
-			size_hint: None, None
-			size: 900, 900
-		AbilityMenu:
-			id: ability_menu
-			orientation: 'vertical'
-			Label:
-				text: 'Choose ability'
+	orientation: 'horizontal'
+	PlayingField:
+		size_hint: None, 1.0
+		width: self.height
+		id: playing_field
+	AbilityMenu:
+		id: ability_menu
+		orientation: 'vertical'
+		Label:
+			text: 'Choose ability'

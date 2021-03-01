@@ -9,6 +9,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 from kivy.uix.popup import Popup
 from kivy.properties import ObjectProperty, NumericProperty, BoundedNumericProperty, StringProperty
+from kivy.uix.screenmanager import ScreenManager, Screen
 
 import random
 import numpy as np
@@ -548,7 +549,7 @@ class Mate(FloatLayout):
     def start_turn(self):
         ''' start the turn by setting game.is_running to False, adding ability prompts '''
         # ToDo: add sufficient mana check here, grey out unavailable ability prompts
-        game = App.get_running_app().root
+        game = App.get_running_app().root.board.ids['game']
         menu = game.ids['ability_menu']
         for ability in self.abilities:
             menu.create_ability_prompt(self, ability)
@@ -561,7 +562,7 @@ class Mate(FloatLayout):
             self.t = 0.5 * self.max_t
         else:
             print('Error, ability.time_usage not valid')
-        game = App.get_running_app().root
+        game = App.get_running_app().root.board.ids['game']
         game.is_running = True
         menu = game.ids['ability_menu']
         for child in menu.children[:]:
@@ -574,7 +575,7 @@ class Mate(FloatLayout):
                     child.remove_widget(grandchild)
 
     def update(self, *args):
-        game = App.get_running_app().root
+        game = App.get_running_app().root.board.ids['game']
         if game.is_running:
             self.change_health(0, self.health_regen)
             self.change_mana(0, self.mana_regen)
@@ -706,7 +707,7 @@ class StatusEffect(Widget):
         self.parent.remove_widget(self)
 
     def update(self, *args):
-        game = App.get_running_app().root
+        game = App.get_running_app().root.board.ids['game']
         if game.is_running:
             self.t -= 1
             if self.mode == 'poisoned':
@@ -1005,7 +1006,7 @@ class PlayingField(GridLayout):
         self.remove_widget(mate)
 
     def update(self, *args):
-        game = App.get_running_app().root
+        game = App.get_running_app().root.board.ids['game']
         if game.is_running:
             self.t += 1
         for child in self.children:
@@ -1015,7 +1016,30 @@ class PlayingField(GridLayout):
                 pass
 
 class MagicMatesGame(BoxLayout):
-    is_running = True
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.is_running = True
+    def update(self, *args):
+        for child in self.children:
+            try:
+                child.update(*args)
+            except AttributeError:
+                pass
+
+class MenuScreen(Screen):
+    pass
+
+class BoardScreen(Screen):
+    def update(self, *args):
+        for child in self.children:
+            try:
+                child.update(*args)
+            except AttributeError:
+                pass
+
+class UpdatingScreenManager(ScreenManager):
+    menu = None
+    board = None
     def update(self, *args):
         for child in self.children:
             try:
@@ -1025,9 +1049,13 @@ class MagicMatesGame(BoxLayout):
 
 class magicmatesApp(App):
     def build(self):
-        game = MagicMatesGame()
-        Clock.schedule_interval(game.update, 1/60.)
-        return game
+        sm = UpdatingScreenManager()
+        Clock.schedule_interval(sm.update, 1/60.)
+        sm.menu = MenuScreen(name='menu')
+        sm.board = BoardScreen(name='board')
+        sm.add_widget(sm.menu)
+        sm.add_widget(sm.board)
+        return sm
 
 if __name__ == "__main__":
     magicmatesApp().run()
