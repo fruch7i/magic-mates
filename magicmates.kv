@@ -6,11 +6,11 @@
 	BoxLayout:
 		orientation: 'vertical'
 		Button:
-			text: 'Start a match'
-			on_press: root.manager.current = 'board'
+			text: 'Back to match'
+			on_release: root.manager.current = 'board'
 		Button:
 			text: 'Quit'
-			on_press: App.get_running_app().stop()
+			on_release: root.manager.quit_game()
 
 <BoardScreen>:
 	BasicBoxLayout:
@@ -22,7 +22,7 @@
 				text: 'MAGIC MATES'
 			Button:
 				text: 'Menu'
-				on_press: root.manager.current = 'menu'
+				on_release: root.manager.current = 'menu'
 		MagicMatesGame:
 			size_hint: 1.0, 0.9
 			id: game

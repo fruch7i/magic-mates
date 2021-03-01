@@ -780,6 +780,9 @@ class PlayingField(GridLayout):
         self.cols = cols
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
+        self.start_new_game()
+        
+    def start_new_game(self):
         self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
         self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)
         self.create_mate(1, ['summon zombie', 'summon ghost', 'freeze'], 'magic staff', 4)
@@ -1041,6 +1044,8 @@ class BoardScreen(Screen):
 class UpdatingScreenManager(ScreenManager):
     menu = None
     board = None
+    def quit_game(self):
+        App.get_running_app().stop()
     def update(self, *args):
         for child in self.children:
             try:
