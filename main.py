@@ -69,7 +69,7 @@ ability_dict = {'move': [0, 'move', 'axe', 'half'],
         'regenerate': [40, 'ally', 'infinite', 'full'],
         'novices thunder': [50, 'enemy', 'infinite', 'full'],
         'vampiric bite': [30, 'enemy', 'weapon', 'full'],
-        'sacrificial attack': [30, 'enemy', 'weapon', 'full'],
+        'sacrificial attack': [0, 'enemy', 'weapon', 'full'],
         'stun': [40, 'enemy', 'infinite', 'full']}
 
 # ToDo, add:
@@ -193,7 +193,7 @@ class Mate(FloatLayout):
     mana_regen = 0.1
 
     team = NumericProperty(0)
-    weapon = StringProperty('')
+    weapon = StringProperty()
     base_damage = 0
     damage_reduction_front = 0.
     damage_reduction_side = 0.
@@ -201,7 +201,7 @@ class Mate(FloatLayout):
     armor_block_front = 0.66
     armor_block_side = 0.33
 
-    button_normal_path = StringProperty('')
+    button_normal_path = StringProperty()
 
     def __init__(self, team, abilities, weapon, **kwargs):
         super().__init__(**kwargs)
@@ -251,6 +251,9 @@ class Mate(FloatLayout):
         if armor_damage > self.armor:
             damage += armor_damage - self.armor
             self.armor = 0
+            playing_field = App.get_running_app().root.screens_dict['board'].ids['game'].ids['playing_field']
+            if playing_field.game_mode == 'tutorial basic attacking' and playing_field.tutorial_count == 2:
+                playing_field.create_tutorial_popup()
         else:
             self.armor -= armor_damage
         self.health = self.health - damage + heal
@@ -273,7 +276,7 @@ class Mate(FloatLayout):
         for status_effect in self_status_effects:
             mode = status_effect.mode
             if mode == 'invigorated':
-                damage = status_effect.stacks * damage
+                damage = (status_effect.stacks+1) * damage
                 self.remove_status_effect(status_effect)
             if mode == 'freeze blade' or mode == 'burn blade' or mode == 'manaburn blade':
                 target.create_status_effect(status_effect.ability, self)
@@ -455,7 +458,6 @@ class Mate(FloatLayout):
         elif ability.base == 'rookie charge' or ability.base == 'bishop charge':
             self.parent.switch_positions_by_ref(self, target)
         elif ability.base == 'pass':
-            self.change_health(0, 5)
             self.change_mana(0, 10)
         elif ability.base == 'heal':
             healing = 30
@@ -547,12 +549,15 @@ class Mate(FloatLayout):
         self.end_turn(ability)
 
     def start_turn(self):
-        ''' start the turn by setting game.is_running to False, adding ability prompts '''
-        # ToDo: add sufficient mana check here, grey out unavailable ability prompts
-        game = App.get_running_app().root.board.ids['game']
+        ''' start the turn by adding ability prompts '''
+        game = App.get_running_app().root.screens_dict['board'].ids['game']
         menu = game.ids['ability_menu']
-        for ability in self.abilities:
-            menu.create_ability_prompt(self, ability)
+        game_mode = game.ids['playing_field'].game_mode
+        if 'tutorial' in game_mode and self.team == 2:
+            self.end_ability(Ability('pass'), None)
+        else:
+            for ability in self.abilities:
+                menu.create_ability_prompt(self, ability)
 
     def end_turn(self, ability):
         ''' end the turn by resetting t and game.is_running, and removing all AbilityPrompts '''
@@ -562,7 +567,7 @@ class Mate(FloatLayout):
             self.t = 0.5 * self.max_t
         else:
             print('Error, ability.time_usage not valid')
-        game = App.get_running_app().root.board.ids['game']
+        game = App.get_running_app().root.screens_dict['board'].ids['game']
         game.is_running = True
         menu = game.ids['ability_menu']
         for child in menu.children[:]:
@@ -573,9 +578,25 @@ class Mate(FloatLayout):
             for grandchild in child.children[:]:
                 if type(grandchild) is SelectButton:
                     child.remove_widget(grandchild)
+        if playing_field.game_mode == 'tutorial basic movement':
+            if ability.base == 'move' and playing_field.tutorial_count == 1:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'rookie charge' and playing_field.tutorial_count == 2:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'bishop charge' and playing_field.tutorial_count == 3:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'knights move' and playing_field.tutorial_count == 4:
+                playing_field.create_tutorial_popup()
+        if playing_field.game_mode == 'tutorial basic attacking':
+            if ability.base == 'attack' and playing_field.tutorial_count == 1:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'invigorate' and playing_field.tutorial_count == 3:
+                playing_field.create_tutorial_popup()
+
+
 
     def update(self, *args):
-        game = App.get_running_app().root.board.ids['game']
+        game = App.get_running_app().root.screens_dict['board'].ids['game']
         if game.is_running:
             self.change_health(0, self.health_regen)
             self.change_mana(0, self.mana_regen)
@@ -610,6 +631,30 @@ class LevelUpLayout(BoxLayout):
         super().__init__(**kwargs)
         for upgrade in ability.possible_upgrades:
             self.add_widget(LevelUpButton(upgrade, popup))
+
+tutorial_dict = {'tutorial basic movement': [
+                                            'Welcome to the first Tutorial. \nTry to move your mate by clicking "move" on the right side, then choose a destination.',
+                                            'Check out the 4 bars on top of your mate:\nHealth in red, armor in green, mana in blue and time in white.\nThe time bar empties after each turn and refills over time.\nWhen full, the time bar becomes yellow and your mates next turn begins.\nCheck it out and move a little, or continue the tutorial by trying out rookies charge.',
+                                            'As you may have thought, rookies charge lets your mate move like a rook in chess.\nThe pun was not intended.\nAdvanced movements like rookies charge need mana.\nYour mates slowly regenerate mana and health, and passing their turn grants them a little extra mana.\nContinue the tutorial by checking out bishops charge.',
+                                            'Good. Easy, right? Now thats how the bishop moves.\nYou may have noticed that normal movement does not use all of your time bar, but only half of it.\nMajor abilities like rookie and bishop charge need the full time bar.\nMinor abilities like normal move, passing the turn or knights move only use half of it.\nFinish this tutorial by jumping like a knight.',
+                                            'Well done. You can continue to move a little, and check out how mana and time bars work,\nbut you will probably want to fight. Check out the next tutorial when you are ready.'
+                                            ],
+                'tutorial basic attacking': [
+                                            'Look, an enemy. They will not fight back for now, but they have a lot of health regen.\nTheir armor is full, too. Armor reduces incoming attacks from the front by 60% and from the side by 30%.\nHowever, the armor is damaged for the same amount it blocks.\nTry a simple attack first. Your mate needs to stand next to their target.',
+                                            'Good. To proceed, destroy the enemies armor.\nRemember, armor does not block attacks from the back, and thus can only be destroyed from the front or side.',
+                                            'End of tutorial. More coming soon.'
+                                            ]
+                }
+
+class TutorialPopup(Popup):
+    ''' a Popup used to show instructions during Tutorial '''
+    info_text = StringProperty()
+    def __init__(self, game_mode, tutorial_count, **kwargs):
+        super().__init__(**kwargs)
+        try:
+            self.info_text = tutorial_dict[game_mode][tutorial_count]
+        except:
+            self.info_text = game_mode + str(tutorial_count)
 
 class LevelUpPopup(Popup):
     ''' a Popup used to level up an Ability '''
@@ -707,7 +752,7 @@ class StatusEffect(Widget):
         self.parent.remove_widget(self)
 
     def update(self, *args):
-        game = App.get_running_app().root.board.ids['game']
+        game = App.get_running_app().root.screens_dict['board'].ids['game']
         if game.is_running:
             self.t -= 1
             if self.mode == 'poisoned':
@@ -762,7 +807,7 @@ class AbilityMenu(BoxLayout):
             button.disabled = True
 
 class AbilityPrompt(RelativeLayout):
-    name = StringProperty('')
+    name = StringProperty()
     def __init__(self, source, ability, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
@@ -774,24 +819,39 @@ class AbilityPrompt(RelativeLayout):
 class PlayingField(GridLayout):
     ''' the playing field where MagicMates move around '''
     t = NumericProperty(0)
+    game_mode = StringProperty()
+    tutorial_count = 0
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = cols
+        self.start_game('standard')
+        
+    def start_game(self, game_mode):
+        self.tutorial_count = 0
+        self.game_mode = game_mode
+        self.clear_widgets()
         for i in range(0, self.cols**2):
             self.add_widget(EmptyField())
-        self.start_new_game()
-        
-    def start_new_game(self):
-        self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
-        self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)
-        self.create_mate(1, ['summon zombie', 'summon ghost', 'freeze'], 'magic staff', 4)
-        self.create_mate(1, ['multishot', 'pierce attack', 'knights move'], 'bow', 5)
 
-        self.create_mate(2, ['pierce attack', 'sacrificial attack', 'bishop charge'], 'longsword', 47)
-        self.create_mate(2, ['stab back', 'quick attack', 'double attack'], 'spear', 46)
-        self.create_mate(2, ['pierce attack', 'sacrificial attack', 'purge'], 'axe and buckler', 44)
-        self.create_mate(2, ['manaburn', 'burn', 'summon golem'], 'wand and buckler', 43)
+        if game_mode == 'tutorial basic movement':
+            self.create_mate(1, ['rookie charge', 'bishop charge', 'knights move'], 'axe', 24)
+            self.children[24].armor = self.children[24].max_armor
+        if game_mode == 'tutorial basic attacking':
+            self.create_mate(1, ['invigorate', 'sacrificial attack', 'axe pull'], 'axe', 17)
+            self.create_mate(2, [], 'axe', 31)
+            self.children[31].health_regen = 0.3
+            self.children[31].armor = self.children[31].max_armor
+        elif game_mode == 'standard':
+            self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
+            self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)
+            self.create_mate(1, ['summon zombie', 'summon ghost', 'freeze'], 'magic staff', 4)
+            self.create_mate(1, ['multishot', 'pierce attack', 'knights move'], 'bow', 5)
+
+            self.create_mate(2, ['pierce attack', 'sacrificial attack', 'bishop charge'], 'longsword', 47)
+            self.create_mate(2, ['stab back', 'quick attack', 'double attack'], 'spear', 46)
+            self.create_mate(2, ['pierce attack', 'sacrificial attack', 'purge'], 'axe and buckler', 44)
+            self.create_mate(2, ['manaburn', 'burn', 'summon golem'], 'wand and buckler', 43)
 
     def adjust_target_type(self, mate, index_list, target_type):
         if target_type == 'move' or target_type == 'summon':
@@ -1009,10 +1069,18 @@ class PlayingField(GridLayout):
         self.switch_positions_by_ref(empty_field, mate)
         self.remove_widget(mate)
 
+    def create_tutorial_popup(self):
+        popup = TutorialPopup(self.game_mode, self.tutorial_count)
+        popup.open()
+        self.tutorial_count += 1
+
     def update(self, *args):
-        game = App.get_running_app().root.board.ids['game']
+        game = App.get_running_app().root.screens_dict['board'].ids['game']
         if game.is_running:
             self.t += 1
+            if 'tutorial' in self.game_mode and self.tutorial_count == 0:
+                self.create_tutorial_popup()
+
         for child in self.children:
             try:
                 child.update(*args)
@@ -1023,6 +1091,10 @@ class MagicMatesGame(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.is_running = True
+    def start_game(self, game_mode):
+        self.is_running = True
+        self.ids['ability_menu'].clear_widgets()
+        self.ids['playing_field'].start_game(game_mode)
     def update(self, *args):
         for child in self.children:
             try:
@@ -1031,9 +1103,20 @@ class MagicMatesGame(BoxLayout):
                 pass
 
 class MenuScreen(Screen):
-    pass
+    def start_game(self, game_mode):
+        sm = App.get_running_app().root
+        sm.current = 'board'
+        sm.screens_dict['board'].start_game(game_mode)
+
+class TutorialSelectScreen(Screen):
+    def start_tutorial(self, game_mode):
+        sm = App.get_running_app().root
+        sm.current = 'board'
+        sm.screens_dict['board'].start_game(game_mode)
 
 class BoardScreen(Screen):
+    def start_game(self, game_mode):
+        self.ids['game'].start_game(game_mode)
     def update(self, *args):
         for child in self.children:
             try:
@@ -1042,8 +1125,7 @@ class BoardScreen(Screen):
                 pass
 
 class UpdatingScreenManager(ScreenManager):
-    menu = None
-    board = None
+    screens_dict = {}
     def quit_game(self):
         App.get_running_app().stop()
     def update(self, *args):
@@ -1057,10 +1139,10 @@ class magicmatesApp(App):
     def build(self):
         sm = UpdatingScreenManager()
         Clock.schedule_interval(sm.update, 1/60.)
-        sm.menu = MenuScreen(name='menu')
-        sm.board = BoardScreen(name='board')
-        sm.add_widget(sm.menu)
-        sm.add_widget(sm.board)
+
+        sm.screens_dict = {'menu': MenuScreen(name='menu'), 'board': BoardScreen(name='board'), 'tutorial_select': TutorialSelectScreen(name='tutorial_select')}
+        for key, screen in sm.screens_dict.items():
+            sm.add_widget(screen)
         return sm
 
 if __name__ == "__main__":

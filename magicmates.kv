@@ -2,12 +2,33 @@
 
 <BasicBoxLayout>:
 
+<TutorialSelectScreen>:
+	BoxLayout:
+		orientation: 'vertical'
+		Label:
+			text: 'Tutorial'
+		Button:
+			text: 'Basics: Movement'
+			on_release: root.start_tutorial('tutorial basic movement')
+		Button:
+			text: 'Basics: Attacking'
+			on_release: root.start_tutorial('tutorial basic attacking')
+		Button:
+			text: 'Back to Menu'
+			on_release: root.manager.current = 'menu'
+
 <MenuScreen>:
 	BoxLayout:
 		orientation: 'vertical'
 		Button:
 			text: 'Back to match'
 			on_release: root.manager.current = 'board'
+		Button:
+			text: 'New Match'
+			on_release: root.start_game('standard')
+		Button:
+			text: 'Tutorial'
+			on_release: root.manager.current = 'tutorial_select'
 		Button:
 			text: 'Quit'
 			on_release: root.manager.quit_game()
@@ -50,6 +71,20 @@
 
 <LevelUpPopup>:
 	title: 'Ability leveled up!'
+
+<TutorialPopup>:
+	title: 'Tutorial'
+	size_hint: 1.0, 0.4
+	pos_hint: {'x': 0., 'y': 0.}
+	BoxLayout:
+		orientation: 'vertical'
+		Label:
+			size_hint: 1.0, 0.8
+			text: root.info_text
+		Button:
+			size_hint: 1.0, 0.2
+			text: 'continue'
+			on_release: root.dismiss()
 
 <InfoPopup>:
 	title: 'Character information'
@@ -102,7 +137,6 @@
 		size_hint: (None, None)
 		size: (root.width-4, root.height-26)
 		on_release: root.ma_on_release()
-
 
 <MagicMatesGame>:
 	orientation: 'horizontal'
