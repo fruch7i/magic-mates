@@ -13,104 +13,15 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 
 import random
 import numpy as np
+import pandas as pd
 
 # the number of cols (and also rows) of the PlayingField
 cols = 7
 
-# a dictionary with all abilities, used to init the Ability class
-# key: base name *** 0: manacost *** 1: target_type *** 2: reach *** 3: time_usage
-# target_types:
-# EmptyField
-# Mate
-#   enemy
-#   ally
-# Multiple Mates:
-#   all enemies
-#   all allies
-#   all mates
-#   distinct mates
-
-ability_dict = {'move': [0, 'move', 'axe', 'half'],
-        'shield raise': [30, 'ally', 'self', 'full'],
-        'shield bash': [30, 'enemy', 'sword and shield', 'full'],
-        'stab back': [30, 'enemy', 'spear', 'full'],
-        'powershot': [30, 'enemy', 'bow', 'full'],
-        'multishot': [30, 'all enemies', 'bow', 'full'],
-        'knights move': [20, 'move', 'knight', 'half'],
-        'teleport': [50, 'move', 'infinite', 'full'],
-        'summon zombie': [50, 'summon', 'axe', 'full'],
-        'summon golem': [50, 'summon', 'axe', 'full'],
-        'summon ghost': [50, 'summon', 'axe', 'full'],
-        'summon vampire': [50, 'summon', 'axe', 'full'],
-        'summon shadow': [100, 'summon', 'axe', 'full'],
-        'pass': [0, 'self', 'self', 'half'],
-        'attack': [0, 'enemy', 'weapon', 'full'],
-        'pierce attack': [40, 'enemy', 'weapon', 'full'],
-        'axe pull': [30, 'enemy', 'weapon', 'full'],
-        'shield breaker': [40, 'enemy', 'weapon', 'full'],
-        'rookie charge': [20, 'move', 'rook', 'full'],
-        'bishop charge': [20, 'move', 'bishop', 'full'],
-        'mana strike': [0, 'enemy', 'weapon', 'full'],
-        'quick attack': [30, 'enemy', 'weapon', 'half'],
-        'double attack': [60, 'enemy', 'weapon', 'full'],
-        'knights attack': [20, 'enemy', 'knight', 'full'],
-        'freeze': [30, 'enemy', 'infinite', 'full'],
-        'electrocute': [30, 'enemy', 'infinite', 'full'],
-        'burn': [30, 'enemy', 'infinite', 'full'],
-        'manaburn': [30, 'enemy', 'infinite', 'full'],
-        'poison': [30, 'enemy', 'infinite', 'full'],
-        'cleanse': [20, 'ally', 'infinite', 'full'],
-        'purge': [20, 'enemy', 'infinite', 'full'],
-        'invigorate': [40, 'ally', 'infinite', 'full'],
-        'heal': [40, 'ally', 'infinite', 'full'],
-        'health gift': [25, 'ally', 'infinite', 'full'],
-        'mana gift': [30, 'ally', 'infinite', 'full'],
-        'morale raise': [30, 'ally', 'infinite', 'full'],
-        'regenerate': [40, 'ally', 'infinite', 'full'],
-        'novices thunder': [50, 'enemy', 'infinite', 'full'],
-        'vampiric bite': [30, 'enemy', 'weapon', 'full'],
-        'sacrificial attack': [0, 'enemy', 'weapon', 'full'],
-        'stun': [40, 'enemy', 'infinite', 'full']}
-
-# ToDo, add:
-# improve target handling of allies, enemies, self, all mates etc
-
-# flanking bonus damage:
-# bonus damage if allies are on opposing sides
-
-# new abilities:
-# life bond: taking damage for allies
-# magic shield: blocking next status_effect application
-# multishot: bow attack to all available targets
-# swirl: axe attack to all targets available
-# novices thunder: very weak attack spell with insane gains through level up
-
-# inkscape images of wizards
-# wizards with different weapons
-# load images based on weapon
-# team 1: black drawing on white background
-# team 2: white drawing on black background
-
-# a dictionary with the connection between abilities and their respective applied status_effects and their sign
-status_effect_dict = {'freeze': ['frozen', 'debuff'],
-        'burn': ['burning', 'debuff'],
-        'manaburn': ['manaburning', 'debuff'],
-        'poison': ['poisoned', 'debuff'],
-        'shield raise': ['shield raised', 'buff'],
-        'shield breaker': ['shield broken', 'debuff'],
-        'regenerate': ['regenerating', 'buff'],
-        'invigorate': ['invigorated', 'buff'],
-        'stun': ['stunned', 'debuff']}
-
-# a dictionary mapping weapon to its base_damage
-weapon_dict = {'longsword': 30,
-        'sword and shield': 20,
-        'axe': 30,
-        'axe and buckler': 20,
-        'spear': 20,
-        'bow': 20,
-        'magic staff': 10,
-        'wand and buckler': 5}
+tutorial_data = pd.read_csv('data/tutorial.csv', sep='\t', index_col=0)
+ability_data = pd.read_csv('data/abilities.csv', sep='\t', index_col=0)
+status_effect_data = pd.read_csv('data/status_effects.csv', sep='\t', index_col=0)
+weapon_data = pd.read_csv('data/weapons.csv', sep='\t', index_col=0)
 
 # a dictionary with the available upgrades for an Ability
 ability_upgrades_dict = {'freeze': ['stunning freeze', 'everlasting freeze', 'freeze blade'],
@@ -156,10 +67,10 @@ class Ability():
             self.level_up_experience = 2
         except KeyError:
             self.level_up_experience = np.infty
-        self.manacost = ability_dict[name][0]
-        self.target_type = ability_dict[name][1]
-        self.reach = ability_dict[name][2]
-        self.time_usage = ability_dict[name][3]
+        self.manacost = int(ability_data.loc[name]['manacost'])
+        self.target_type = ability_data.loc[name]['target type']
+        self.reach = ability_data.loc[name]['reach']
+        self.time_usage = ability_data.loc[name]['time usage']
         self.experience = 0
         self.level = 1
     def level_up(self, upgrade):
@@ -187,6 +98,7 @@ class Mate(FloatLayout):
 
     max_armor = 100.0
     armor = NumericProperty(1.0)
+    armor_regen = 0.0
 
     max_mana = 100.0
     mana = NumericProperty(1.0)
@@ -214,7 +126,7 @@ class Mate(FloatLayout):
             self.abilities.append(Ability(abil))
         self.abilities.append(Ability('pass'))
         self.weapon = weapon
-        self.base_damage = weapon_dict[weapon]
+        self.base_damage = int(weapon_data.loc[weapon]['damage'])
         if weapon == 'sword and shield':
             self.damage_reduction_front = 0.5
             self.damage_reduction_side = 0.25
@@ -301,7 +213,7 @@ class Mate(FloatLayout):
         status_effect_found = False
         for child in self.children:
             if type(child) is StatusEffect:
-                if child.mode == status_effect_dict[ability.base][0]:
+                if child.mode == status_effect_data.loc[ability.base]['mode']:
                     child.apply_status_effect(ability, source, self)
                     status_effect_found = True
         if status_effect_found == False:
@@ -517,7 +429,7 @@ class Mate(FloatLayout):
             self.attack(target, self.base_damage)
             self.change_health(0, self.base_damage)
         elif ability.base == 'sacrificial attack':
-            self.attack(target, 2*self.base_damage)
+            self.attack(target, 1.5*self.base_damage)
             self.change_health(self.base_damage, 0, pierce = True)
         elif ability.base == 'pierce attack':
             self.attack(target, self.base_damage, pierce = True)
@@ -632,27 +544,13 @@ class LevelUpLayout(BoxLayout):
         for upgrade in ability.possible_upgrades:
             self.add_widget(LevelUpButton(upgrade, popup))
 
-tutorial_dict = {'tutorial basic movement': [
-                                            'Welcome to the first Tutorial. \nTry to move your mate by clicking "move" on the right side, then choose a destination.',
-                                            'Check out the 4 bars on top of your mate:\nHealth in red, armor in green, mana in blue and time in white.\nThe time bar empties after each turn and refills over time.\nWhen full, the time bar becomes yellow and your mates next turn begins.\nCheck it out and move a little, or continue the tutorial by trying out rookies charge.',
-                                            'As you may have thought, rookies charge lets your mate move like a rook in chess.\nThe pun was not intended.\nAdvanced movements like rookies charge need mana.\nYour mates slowly regenerate mana and health, and passing their turn grants them a little extra mana.\nContinue the tutorial by checking out bishops charge.',
-                                            'Good. Easy, right? Now thats how the bishop moves.\nYou may have noticed that normal movement does not use all of your time bar, but only half of it.\nMajor abilities like rookie and bishop charge need the full time bar.\nMinor abilities like normal move, passing the turn or knights move only use half of it.\nFinish this tutorial by jumping like a knight.',
-                                            'Well done. You can continue to move a little, and check out how mana and time bars work,\nbut you will probably want to fight. Check out the next tutorial when you are ready.'
-                                            ],
-                'tutorial basic attacking': [
-                                            'Look, an enemy. They will not fight back for now, but they have a lot of health regen.\nTheir armor is full, too. Armor reduces incoming attacks from the front by 60% and from the side by 30%.\nHowever, the armor is damaged for the same amount it blocks.\nTry a simple attack first. Your mate needs to stand next to their target.',
-                                            'Good. To proceed, destroy the enemies armor.\nRemember, armor does not block attacks from the back, and thus can only be destroyed from the front or side.',
-                                            'End of tutorial. More coming soon.'
-                                            ]
-                }
-
 class TutorialPopup(Popup):
     ''' a Popup used to show instructions during Tutorial '''
     info_text = StringProperty()
     def __init__(self, game_mode, tutorial_count, **kwargs):
         super().__init__(**kwargs)
         try:
-            self.info_text = tutorial_dict[game_mode][tutorial_count]
+            self.info_text = tutorial_data.loc[game_mode][tutorial_count]
         except:
             self.info_text = game_mode + str(tutorial_count)
 
@@ -667,6 +565,7 @@ class InfoPopup(Popup):
     ''' a Popup showing some information about the Mate '''
     team_label = StringProperty()
     health_label = StringProperty()
+    armor_label = StringProperty()
     mana_label = StringProperty()
     time_label = StringProperty()
     weapon_label = StringProperty()
@@ -676,6 +575,7 @@ class InfoPopup(Popup):
         super().__init__(**kwargs)
         self.team_label = "team: {}".format(mate.team)
         self.health_label = "health: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.health, mate.max_health, mate.health_regen)
+        self.armor_label = "armor: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.armor, mate.max_armor, mate.armor_regen)
         self.mana_label = "mana: {0:0.1f}/{1:0.1f} regenerating {2:0.2f}".format(mate.mana, mate.max_mana, mate.mana_regen)
         self.time_label = "time: {0:0.1f}/{1:0.1f}".format(mate.t, mate.max_t)
         self.weapon_label = "weapon {0} with base damage: {1:0.1f}".format(mate.weapon, mate.base_damage)
@@ -694,8 +594,8 @@ class StatusEffect(Widget):
     def __init__(self, ability, source, target, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
-        self.mode = status_effect_dict[ability.base][0]
-        self.sign = status_effect_dict[ability.base][1]
+        self.mode = status_effect_data.loc[ability.base]['mode']
+        self.sign = status_effect_data.loc[ability.base]['sign']
         self.apply_status_effect(ability, source, target)
 
     def apply_status_effect(self, ability, source, target):
@@ -842,6 +742,13 @@ class PlayingField(GridLayout):
             self.create_mate(2, [], 'axe', 31)
             self.children[31].health_regen = 0.3
             self.children[31].armor = self.children[31].max_armor
+        if game_mode == 'tutorial weapons and shields':
+            self.create_mate(1, [], 'wand and buckler', 1)
+            self.create_mate(1, [], 'axe and buckler', 2)
+            self.create_mate(1, [], 'longsword', 3)
+            self.create_mate(1, [], 'spear', 4)
+            self.create_mate(1, [], 'bow', 5)
+            self.create_mate(2, [], 'sword and shield', 45)
         elif game_mode == 'standard':
             self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
             self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)

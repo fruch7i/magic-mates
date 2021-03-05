@@ -1,0 +1,10 @@
+	mode	sign
+freeze	frozen	debuff
+burn	burning	debuff
+manaburn	manaburning	debuff
+poison	poisoned	debuff
+shield raise	shield raised	buff
+shield breaker	shield broken	debuff
+regenerate	regenerating	buff
+invigorate	invigorated	buff
+stun	stunned	debuff

@@ -1,0 +1,42 @@
+	manacost	target type	reach	time usage
+move	0	move	axe	half
+shield raise	30	ally	sword and shield	full
+shield bash	30	enemy	sword and shield	full
+stab back	30	enemy	spear	full
+powershot	30	enemy	bow	full
+multishot	30	all enemies	bow	full
+knights move	20	move	knight	half
+teleport	50	move	infinite	full
+summon zombie	50	summon	axe	full
+summon golem	50	summon	axe	full
+summon ghost	50	summon	axe	full
+summon vampire	50	summon	axe	full
+summon shadow	100	summon	axe	full
+pass	0	self	self	half
+attack	0	enemy	weapon	full
+pierce attack	40	enemy	weapon	full
+axe pull	30	enemy	weapon	full
+shield breaker	40	enemy	weapon	full
+rookie charge	20	move	rook	full
+bishop charge	20	move	bishop	full
+mana strike	0	enemy	weapon	full
+quick attack	30	enemy	weapon	half
+double attack	60	enemy	weapon	full
+knights attack	20	enemy	knight	full
+freeze	30	enemy	infinite	full
+electrocute	30	enemy	infinite	full
+burn	30	enemy	infinite	full
+manaburn	30	enemy	infinite	full
+poison	30	enemy	infinite	full
+cleanse	20	ally	infinite	full
+purge	20	enemy	infinite	full
+invigorate	40	ally	infinite	full
+heal	40	ally	infinite	full
+health gift	25	ally	infinite	full
+mana gift	30	ally	infinite	full
+morale raise	30	ally	infinite	full
+regenerate	40	ally	infinite	full
+novices thunder	50	enemy	infinite	full
+vampiric bite	30	enemy	weapon	full
+sacrificial attack	0	enemy	weapon	full
+stun	40	enemy	infinite	full

@@ -2,6 +2,9 @@
 
 <BasicBoxLayout>:
 
+<Label>:
+	font_size: 25
+
 <TutorialSelectScreen>:
 	BoxLayout:
 		orientation: 'vertical'
@@ -13,6 +16,9 @@
 		Button:
 			text: 'Basics: Attacking'
 			on_release: root.start_tutorial('tutorial basic attacking')
+		Button:
+			text: 'Weapons and Shields'
+			on_release: root.start_tutorial('tutorial weapons and shields')
 		Button:
 			text: 'Back to Menu'
 			on_release: root.manager.current = 'menu'
@@ -79,8 +85,12 @@
 	BoxLayout:
 		orientation: 'vertical'
 		Label:
-			size_hint: 1.0, 0.8
+			size_hint: 1.0, 0.6
+			text_size: self.size
 			text: root.info_text
+		Label:
+			size_hint: 1.0, 0.2
+			text: ''
 		Button:
 			size_hint: 1.0, 0.2
 			text: 'continue'
@@ -90,16 +100,20 @@
 	title: 'Character information'
 	BoxLayout:
 		orientation: 'vertical'
-		Label:
-			text: root.team_label
-		Label:
-			text: root.health_label
-		Label:
-			text: root.mana_label
-		Label:
-			text: root.time_label
-		Label:
-			text: root.weapon_label
+		BoxLayout:
+			orientation: 'vertical'
+			Label:
+				text: root.team_label
+			Label:
+				text: root.health_label
+			Label:
+				text: root.armor_label
+			Label:
+				text: root.mana_label
+			Label:
+				text: root.time_label
+			Label:
+				text: root.weapon_label
 		Label:
 			text: root.abilities_label
 		Label:
