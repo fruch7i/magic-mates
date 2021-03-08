@@ -166,6 +166,8 @@ class Mate(FloatLayout):
             playing_field = App.get_running_app().root.screens_dict['board'].ids['game'].ids['playing_field']
             if playing_field.game_mode == 'tutorial basic attacking' and playing_field.tutorial_count == 2:
                 playing_field.create_tutorial_popup()
+            if playing_field.game_mode == 'tutorial shields' and playing_field.tutorial_count == 2:
+                playing_field.create_tutorial_popup()
         else:
             self.armor -= armor_damage
         self.health = self.health - damage + heal
@@ -287,6 +289,7 @@ class Mate(FloatLayout):
 
     def create_select_buttons(self, ability):
         ''' create select buttons based on the ability used '''
+        self.parent.remove_all_select_buttons()
         index = self.parent.children[:].index(self)
         if ability.reach == 'weapon':
             reach = self.weapon
@@ -416,7 +419,7 @@ class Mate(FloatLayout):
             if 'purge buffs' in ability.upgrades:
                 sign = 'buff'
             if 'steal' in ability.upgrades:
-                print('not yet implemented')
+                raise Exception('Implementation pending')
             if 'purge all' in ability.upgrades:
                 target.remove_status_effects(sign=sign)
             else:
@@ -466,7 +469,15 @@ class Mate(FloatLayout):
         menu = game.ids['ability_menu']
         game_mode = game.ids['playing_field'].game_mode
         if 'tutorial' in game_mode and self.team == 2:
-            self.end_ability(Ability('pass'), None)
+            if 'basic' in game_mode:
+                self.end_ability(Ability('pass'), None)
+            else:
+                targets = self.parent.get_axe_index(self, 'enemy')
+                if targets:
+                    target = random.choice(targets)
+                    self.end_ability(Ability('attack'), self.parent.children[target])
+                else:
+                    self.end_ability(Ability('pass'), None)
         else:
             for ability in self.abilities:
                 menu.create_ability_prompt(self, ability)
@@ -478,7 +489,7 @@ class Mate(FloatLayout):
         elif ability.time_usage == 'half' or 'quicken' in ability.upgrades:
             self.t = 0.5 * self.max_t
         else:
-            print('Error, ability.time_usage not valid')
+            raise Exception('time usage invalid')
         game = App.get_running_app().root.screens_dict['board'].ids['game']
         game.is_running = True
         menu = game.ids['ability_menu']
@@ -486,10 +497,7 @@ class Mate(FloatLayout):
             if type(child) is AbilityPrompt:
                 menu.remove_widget(child)
         playing_field = game.ids['playing_field']
-        for child in playing_field.children[:]:
-            for grandchild in child.children[:]:
-                if type(grandchild) is SelectButton:
-                    child.remove_widget(grandchild)
+        playing_field.remove_all_select_buttons()
         if playing_field.game_mode == 'tutorial basic movement':
             if ability.base == 'move' and playing_field.tutorial_count == 1:
                 playing_field.create_tutorial_popup()
@@ -504,8 +512,6 @@ class Mate(FloatLayout):
                 playing_field.create_tutorial_popup()
             if ability.base == 'invigorate' and playing_field.tutorial_count == 3:
                 playing_field.create_tutorial_popup()
-
-
 
     def update(self, *args):
         game = App.get_running_app().root.screens_dict['board'].ids['game']
@@ -705,14 +711,20 @@ class AbilityMenu(BoxLayout):
         self.add_widget(button)
         if source.mana < ability.manacost:
             button.disabled = True
+        if not source.parent.get_ability_index(source, ability) and not ability.reach == 'self':
+            button.disabled = True
 
 class AbilityPrompt(RelativeLayout):
     name = StringProperty()
+    manacost_label = StringProperty()
+    info_label = StringProperty()
     def __init__(self, source, ability, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
-        self.name = ability.base
+        self.name = ability.base.upper()
         self.source = source
+        self.manacost_label = 'manacost: ' + str(self.ability.manacost)
+        self.info_label = 'some info about the ability'
     def ap_on_release(self):
         self.source.start_ability(self.ability)
 
@@ -742,7 +754,14 @@ class PlayingField(GridLayout):
             self.create_mate(2, [], 'axe', 31)
             self.children[31].health_regen = 0.3
             self.children[31].armor = self.children[31].max_armor
-        if game_mode == 'tutorial weapons and shields':
+        if game_mode == 'tutorial shields':
+            self.create_mate(1, [], 'axe and buckler', 17)
+            self.children[17].t = 90
+            self.create_mate(1, [], 'spear', 10)
+            self.children[17].t = 50
+            self.create_mate(2, [], 'sword and shield', 24)
+            self.children[24].t = 70
+        if game_mode == 'tutorial weapons':
             self.create_mate(1, [], 'wand and buckler', 1)
             self.create_mate(1, [], 'axe and buckler', 2)
             self.create_mate(1, [], 'longsword', 3)
@@ -772,6 +791,32 @@ class PlayingField(GridLayout):
             if 'self' in target_type:
                 index_list.append(self.children[:].index(mate))
             return index_list
+
+    def get_ability_index(self, mate, ability):
+        if 'weapon' in ability.reach:
+            reach = mate.weapon
+        else:
+            reach = ability.reach
+        if 'sword' in reach:
+            return self.get_sword_index(mate, ability.target_type)
+        elif 'axe' in reach:
+            return self.get_axe_index(mate, ability.target_type)
+        elif 'spear' in reach:
+            return self.get_spear_index(mate, ability.target_type)
+        elif 'bow' in reach:
+            return self.get_queen_index(mate, ability.target_type)
+        elif 'rook' in reach:
+            return self.get_rook_index(mate, ability.target_type)
+        elif 'bishop' in reach:
+            return self.get_bishop_index(mate, ability.target_type)
+        elif 'knight' in reach:
+            return self.get_knight_index(mate, ability.target_type)
+        elif 'wand' in reach or 'staff' in reach or 'infinite' in reach:
+            return self.adjust_target_type(mate, range(0, cols**2-1), ability.target_type)
+        elif 'self' in reach:
+            return []
+        else:
+            raise Exception('ability reach invalid')
 
     def get_sword_index(self, mate, target_type):
         index = self.children[:].index(mate)
@@ -975,6 +1020,12 @@ class PlayingField(GridLayout):
         self.add_widget(empty_field)
         self.switch_positions_by_ref(empty_field, mate)
         self.remove_widget(mate)
+
+    def remove_all_select_buttons(self):
+        for child in self.children[:]:
+            for grandchild in child.children[:]:
+                if type(grandchild) is SelectButton:
+                    child.remove_widget(grandchild)
 
     def create_tutorial_popup(self):
         popup = TutorialPopup(self.game_mode, self.tutorial_count)

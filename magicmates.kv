@@ -17,8 +17,11 @@
 			text: 'Basics: Attacking'
 			on_release: root.start_tutorial('tutorial basic attacking')
 		Button:
-			text: 'Weapons and Shields'
-			on_release: root.start_tutorial('tutorial weapons and shields')
+			text: 'Shields'
+			on_release: root.start_tutorial('tutorial shields')
+		Button:
+			text: 'Weapons'
+			on_release: root.start_tutorial('tutorial weapons')
 		Button:
 			text: 'Back to Menu'
 			on_release: root.manager.current = 'menu'
@@ -55,9 +58,13 @@
 			id: game
 
 <AbilityPrompt>:
-	Button:
-		on_release: root.ap_on_release()
-		text: root.name
+	BoxLayout:
+		orientation: 'horizontal'
+		Button:
+			on_release: root.ap_on_release()
+			text: root.name
+		Label:
+			text: root.manacost_label
 
 <SelectButton>:
 	pos_hint: {'x':0.25, 'y':0.25}
