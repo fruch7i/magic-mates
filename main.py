@@ -64,7 +64,7 @@ class Ability():
         self.upgrades = [name]
         try:
             self.possible_upgrades = ability_upgrades_dict[name]
-            self.level_up_experience = 2
+            self.level_up_experience = 5
         except KeyError:
             self.level_up_experience = np.infty
         self.manacost = int(ability_data.loc[name]['manacost'])
@@ -119,24 +119,19 @@ class Mate(FloatLayout):
         super().__init__(**kwargs)
         self.health = self.max_health
         self.mana = self.max_mana
-        self.t = random.randint(0,99)
         self.team = team
         self.abilities = [Ability('move'), Ability('attack')]
         for abil in abilities:
             self.abilities.append(Ability(abil))
         self.abilities.append(Ability('pass'))
         self.weapon = weapon
-        self.base_damage = int(weapon_data.loc[weapon]['damage'])
-        if weapon == 'sword and shield':
-            self.damage_reduction_front = 0.5
-            self.damage_reduction_side = 0.25
-            self.armor = self.max_armor
-        elif 'buckler' in weapon:
-            self.damage_reduction_front = 0.2
-            self.damage_reduction_side = 0.1
-            self.armor = 0.66 * self.max_armor
-        else:
-            self.armor = 0.33 * self.max_armor
+        self.base_damage = float(weapon_data.loc[weapon]['damage'])
+        self.damage_reduction_front = float(weapon_data.loc[weapon]['damage reduction front'])
+        self.damage_reduction_side = float(weapon_data.loc[weapon]['damage reduction side'])
+        self.armor = float(weapon_data.loc[weapon]['starting armor'])
+        self.max_armor = float(weapon_data.loc[weapon]['max armor'])
+        self.max_t = float(weapon_data.loc[weapon]['max t'])
+        self.t = random.random() * self.max_t
         self.button_normal_path = 'gfx/' + str(self.team) + '_' + self.weapon.replace(' ', '_') + '.png'
         
     def change_health(self, damage, heal, source = None, pierce = False):
@@ -147,26 +142,39 @@ class Mate(FloatLayout):
             armor_block_front = self.armor_block_front
             armor_block_side = self.armor_block_side
 
+        status_effects = self.get_status_effects()
+
+        if 'shield raised' in [status_effect.mode for status_effect in status_effects]:
+            damage_reduction_front = 1.5 * self.damage_reduction_front
+            damage_reduction_side = 1.5 * self.damage_reduction_side
+        elif 'shield broken' in [status_effect.mode for status_effect in status_effects]:
+            damage_reduction_front = 0.5 * self.damage_reduction_front
+            damage_reduction_side = 0.5 * self.damage_reduction_side
+        else:
+            damage_reduction_front = self.damage_reduction_front
+            damage_reduction_side = self.damage_reduction_side
+
         if source:
             if get_direction(self, source) == 'front':
-                damage = (1-self.damage_reduction_front) * damage
+                damage = (1-damage_reduction_front) * damage
                 armor_damage = armor_block_front * damage
                 damage = (1-armor_block_front) * damage
             elif get_direction(self, source) == 'side':
-                damage = (1-self.damage_reduction_side) * damage
+                damage = (1-damage_reduction_side) * damage
                 armor_damage = armor_block_side * damage
                 damage = (1-armor_block_side) * damage
             else:
                 armor_damage = 0
+                playing_field = App.get_running_app().root.screens_dict['board'].ids['game'].ids['playing_field']
+                if playing_field.game_mode == 'tutorial basic attacking' and playing_field.tutorial_count == 3:
+                    playing_field.create_tutorial_popup()
         else:
             armor_damage = 0
         if armor_damage > self.armor:
             damage += armor_damage - self.armor
             self.armor = 0
             playing_field = App.get_running_app().root.screens_dict['board'].ids['game'].ids['playing_field']
-            if playing_field.game_mode == 'tutorial basic attacking' and playing_field.tutorial_count == 2:
-                playing_field.create_tutorial_popup()
-            if playing_field.game_mode == 'tutorial shields' and playing_field.tutorial_count == 2:
+            if playing_field.game_mode == 'tutorial basic attacking' and playing_field.tutorial_count == 4:
                 playing_field.create_tutorial_popup()
         else:
             self.armor -= armor_damage
@@ -510,7 +518,20 @@ class Mate(FloatLayout):
         if playing_field.game_mode == 'tutorial basic attacking':
             if ability.base == 'attack' and playing_field.tutorial_count == 1:
                 playing_field.create_tutorial_popup()
-            if ability.base == 'invigorate' and playing_field.tutorial_count == 3:
+            if ability.base == 'pierce attack' and playing_field.tutorial_count == 2:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'invigorate' and playing_field.tutorial_count == 5:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'sacrificial attack' and playing_field.tutorial_count == 6:
+                playing_field.create_tutorial_popup()
+        if playing_field.game_mode == 'tutorial shields':
+            if ability.base == 'shield raise' and playing_field.tutorial_count == 1:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'attack' and playing_field.tutorial_count == 2:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'shield breaker' and playing_field.tutorial_count == 3:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'heal' and playing_field.tutorial_count == 5:
                 playing_field.create_tutorial_popup()
 
     def update(self, *args):
@@ -618,12 +639,16 @@ class StatusEffect(Widget):
             target.max_t += 10
 
         if ability.base == 'shield breaker':
-            target.damage_reduction_front = 0.
-            target.damage_reduction_side = 0.
+            for status_effect in target.get_status_effects():
+                if status_effect.mode == 'shield raised':
+                    status_effect.remove_status_effect()
+                    self.remove_status_effect()
 
-        if ability.base == 'shield raise':
-            target.damage_reduction_front *= 1.5
-            target.damage_reduction_side *= 1.5
+        if  ability.base == 'shield raise':
+            for status_effect in target.get_status_effects():
+                if status_effect.mode == 'shield broken':
+                    status_effect.remove_status_effect()
+                    self.remove_status_effect()
 
         if ability.base == 'burn':
             if 'everlasting burn' in ability.upgrades:
@@ -645,16 +670,10 @@ class StatusEffect(Widget):
             mem_t = self.parent.t / self.parent.max_t
             self.parent.max_t -= self.stacks * 10
             self.parent.t = mem_t * self.parent.max_t
-
-        if self.mode == 'shield broken' or self.mode == 'shield raised':
-            weapon = self.target.weapon
-            if weapon == 'sword and shield':
-                target.damage_reduction_front = 0.5
-                target.damage_reduction_side = 0.25
-            if weapon == 'axe and buckler' or weapon == 'wand and buckler':
-                target.damage_reduction_front = 0.2
-                target.damage_reduction_side = 0.1
-
+        if self.mode == 'shield broken':
+            playing_field = App.get_running_app().root.screens_dict['board'].ids['game'].ids['playing_field']
+            if playing_field.game_mode == 'tutorial shields' and playing_field.tutorial_count == 4:
+                playing_field.create_tutorial_popup()
         self.parent.remove_widget(self)
 
     def update(self, *args):
@@ -750,15 +769,15 @@ class PlayingField(GridLayout):
             self.create_mate(1, ['rookie charge', 'bishop charge', 'knights move'], 'axe', 24)
             self.children[24].armor = self.children[24].max_armor
         if game_mode == 'tutorial basic attacking':
-            self.create_mate(1, ['invigorate', 'sacrificial attack', 'axe pull'], 'axe', 17)
+            self.create_mate(1, ['pierce attack', 'invigorate', 'sacrificial attack'], 'axe', 17)
             self.create_mate(2, [], 'axe', 31)
-            self.children[31].health_regen = 0.3
+            self.children[31].health_regen = 0.4
             self.children[31].armor = self.children[31].max_armor
         if game_mode == 'tutorial shields':
-            self.create_mate(1, [], 'axe and buckler', 17)
+            self.create_mate(1, ['shield raise', 'shield breaker'], 'axe and buckler', 17)
             self.children[17].t = 90
-            self.create_mate(1, [], 'spear', 10)
-            self.children[17].t = 50
+            self.create_mate(1, ['heal'], 'spear', 10)
+            self.children[10].t = 40
             self.create_mate(2, [], 'sword and shield', 24)
             self.children[24].t = 70
         if game_mode == 'tutorial weapons':

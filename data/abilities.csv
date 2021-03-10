@@ -1,6 +1,6 @@
 	manacost	target type	reach	time usage
 move	0	move	axe	half
-shield raise	30	ally	sword and shield	full
+shield raise	30	ally	self	full
 shield bash	30	enemy	sword and shield	full
 stab back	30	enemy	spear	full
 powershot	30	enemy	bow	full

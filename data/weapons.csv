@@ -1,9 +1,9 @@
-	damage
-longsword	50
-sword and shield	30
-axe	40
-axe and buckler	25
-spear	25
-bow	20
-magic staff	10
-wand and buckler	5
+	damage	damage reduction front	damage reduction side	starting armor	max armor	max t
+longsword	50	0	0	100	100	100
+sword and shield	30	0.5	0.25	100	100	120
+axe	40	0	0	100	100	80
+axe and buckler	25	0.3	0.15	100	100	100
+spear	25	0	0	100	100	80
+bow	20	0	0	0	100	80
+magic staff	10	0	0	0	100	80
+wand and buckler	5	0.3	0.15	100	100	100
