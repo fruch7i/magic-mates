@@ -272,23 +272,43 @@ class Mate(FloatLayout):
         if self_row == target_row:
             if self_col < target_col:
                 push = cols
+                if target_col == cols-1:
+                    push = 0
+                    print('push error upper boundary')
             else:
                 push = -cols
+                if target_col == 0:
+                    push = 0
+                    print('push error lower boundary')
         elif self_col == target_col:
             if self_row < target_row:
                 push = 1
+                if target_row%cols == cols-1:
+                    push = 0
+                    print('push error left boundary')
             else:
                 push = -1
+                if target_row%cols == 0:
+                    push = 0
+                    print('push error right boundary')
         elif self_row < target_row:
             if self_col < target_col:
                 push = cols+1
+                if target_col == cols-1 or target_row%cols == cols-1:
+                    push = 0
             else:
                 push = -cols+1
+                if target_col == 0 or target_row%cols == cols-1:
+                    push = 0
         elif self_row > target_row:
             if self_col > target_col:
                 push = -cols-1
+                if target_col == 0 or target_row%cols == 0:
+                    push = 0
             else:
                 push = cols-1
+                if target_col == cols-1 or target_row%cols == 0:
+                    push = 0
 
         push_index = target_index + push
 
@@ -799,19 +819,19 @@ class PlayingField(GridLayout):
         if game_mode == 'tutorial basic movement':
             self.create_mate(1, ['rookie charge', 'bishop charge', 'knights move'], 'axe', 24)
             self.children[24].armor = self.children[24].max_armor
-        if game_mode == 'tutorial basic attacking':
+        elif game_mode == 'tutorial basic attacking':
             self.create_mate(1, ['pierce attack', 'invigorate', 'sacrificial attack'], 'axe', 17)
             self.create_mate(2, [], 'axe', 31)
             self.children[31].health_regen = 0.4
             self.children[31].armor = self.children[31].max_armor
-        if game_mode == 'tutorial shields':
+        elif game_mode == 'tutorial shields':
             self.create_mate(1, ['shield raise', 'shield breaker'], 'axe and buckler', 17)
             self.children[17].t = 90
             self.create_mate(1, ['heal'], 'spear', 10)
             self.children[10].t = 40
             self.create_mate(2, [], 'sword and shield', 24)
             self.children[24].t = 70
-        if game_mode == 'tutorial weapons':
+        elif game_mode == 'tutorial weapons':
             self.create_mate(1, ['axe pull'], 'axe', 2)
             self.children[2].t = 10
             self.create_mate(1, ['bishop charge'], 'bow', 3)
@@ -821,7 +841,7 @@ class PlayingField(GridLayout):
             self.create_mate(2, [], 'magic staff', 45)
             self.create_mate(2, ['stab back'], 'spear', 38)
             self.create_mate(2, [], 'sword and shield', 31)
-        if game_mode == 'tutorial abilities':
+        elif game_mode == 'tutorial abilities':
             self.create_mate(1, ['axe pull'], 'axe', 2)
         elif game_mode == 'standard':
             self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
@@ -833,6 +853,9 @@ class PlayingField(GridLayout):
             self.create_mate(2, ['stab back', 'quick attack', 'double attack'], 'spear', 46)
             self.create_mate(2, ['pierce attack', 'sacrificial attack', 'purge'], 'axe and buckler', 44)
             self.create_mate(2, ['manaburn', 'burn', 'summon golem'], 'wand and buckler', 43)
+        elif game_mode == 'sandbox':
+            self.create_mate(1, ['stab back', 'rookie charge'], 'axe', 1)
+            self.create_mate(2, ['stab back', 'rookie charge'], 'axe', 2)
 
     def adjust_target_type(self, mate, index_list, target_type):
         if target_type == 'move' or target_type == 'summon':
