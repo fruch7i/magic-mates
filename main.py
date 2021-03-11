@@ -479,11 +479,21 @@ class Mate(FloatLayout):
         if 'tutorial' in game_mode and self.team == 2:
             if 'basic' in game_mode:
                 self.end_ability(Ability('pass'), None)
-            else:
+            elif game_mode == 'tutorial shields':
                 targets = self.parent.get_axe_index(self, 'enemy')
                 if targets:
                     target = random.choice(targets)
                     self.end_ability(Ability('attack'), self.parent.children[target])
+                else:
+                    self.end_ability(Ability('pass'), None)
+            elif game_mode == 'tutorial weapons':
+                targets = self.parent.get_ability_index(self, Ability('attack'))
+                if targets:
+                    if self.weapon == 'spear':
+                        ability = 'stab back'
+                    else:
+                        ability = 'attack'
+                    self.end_ability(Ability(ability), self.parent.children[random.choice(targets)])
                 else:
                     self.end_ability(Ability('pass'), None)
         else:
@@ -533,6 +543,19 @@ class Mate(FloatLayout):
                 playing_field.create_tutorial_popup()
             if ability.base == 'heal' and playing_field.tutorial_count == 5:
                 playing_field.create_tutorial_popup()
+        if playing_field.game_mode == 'tutorial weapons':
+            if ability.base == 'attack' and playing_field.tutorial_count == 1:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'move' and playing_field.tutorial_count == 2:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'stab back' and playing_field.tutorial_count == 3:
+                playing_field.create_tutorial_popup()
+            if ability.base == 'axe pull' and playing_field.tutorial_count == 4:
+                playing_field.create_tutorial_popup()
+        if playing_field.game_mode == 'tutorial abilities':
+            if ability.base == '' and playing_field.tutorial_count == 1:
+                playing_field.create_tutorial_popup()
+
 
     def update(self, *args):
         game = App.get_running_app().root.screens_dict['board'].ids['game']
@@ -551,6 +574,14 @@ class Mate(FloatLayout):
 
     def die(self):
         ''' called when the mate dies '''
+        game = App.get_running_app().root.screens_dict['board'].ids['game']
+        playing_field = game.ids['playing_field']
+        if playing_field.game_mode == 'tutorial weapons' and self.weapon == 'sword and shield' and playing_field.tutorial_count == 5:
+                playing_field.create_tutorial_popup()
+        if playing_field.game_mode == 'tutorial weapons' and self.weapon == 'spear' and playing_field.tutorial_count == 6:
+                playing_field.create_tutorial_popup()
+        if playing_field.game_mode == 'tutorial weapons' and self.weapon == 'magic staff' and playing_field.tutorial_count == 7:
+                playing_field.create_tutorial_popup()
         self.parent.remove_mate(self)
 
 class LevelUpButton(Button):
@@ -781,12 +812,17 @@ class PlayingField(GridLayout):
             self.create_mate(2, [], 'sword and shield', 24)
             self.children[24].t = 70
         if game_mode == 'tutorial weapons':
-            self.create_mate(1, [], 'wand and buckler', 1)
-            self.create_mate(1, [], 'axe and buckler', 2)
-            self.create_mate(1, [], 'longsword', 3)
-            self.create_mate(1, [], 'spear', 4)
-            self.create_mate(1, [], 'bow', 5)
-            self.create_mate(2, [], 'sword and shield', 45)
+            self.create_mate(1, ['axe pull'], 'axe', 2)
+            self.children[2].t = 10
+            self.create_mate(1, ['bishop charge'], 'bow', 3)
+            self.children[3].t = 70
+            self.create_mate(1, ['heal'], 'longsword', 4)
+            self.children[4].t = 80
+            self.create_mate(2, [], 'magic staff', 45)
+            self.create_mate(2, ['stab back'], 'spear', 38)
+            self.create_mate(2, [], 'sword and shield', 31)
+        if game_mode == 'tutorial abilities':
+            self.create_mate(1, ['axe pull'], 'axe', 2)
         elif game_mode == 'standard':
             self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
             self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)
