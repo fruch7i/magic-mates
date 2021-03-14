@@ -71,6 +71,7 @@ class Ability():
         self.target_type = ability_data.loc[name]['target type']
         self.reach = ability_data.loc[name]['reach']
         self.time_usage = ability_data.loc[name]['time usage']
+        self.info = ability_data.loc[name]['info']
         self.experience = 0
         self.level = 1
     def level_up(self, upgrade):
@@ -132,7 +133,7 @@ class Mate(FloatLayout):
         self.max_armor = float(weapon_data.loc[weapon]['max armor'])
         self.max_t = float(weapon_data.loc[weapon]['max t'])
         self.t = random.random() * self.max_t
-        self.button_normal_path = 'gfx/' + str(self.team) + '_' + self.weapon.replace(' ', '_') + '.png'
+        self.button_normal_path = 'gfx/mates/' + str(self.team) + '_' + self.weapon.replace(' ', '_') + '.png'
         
     def change_health(self, damage, heal, source = None, pierce = False):
         if pierce:
@@ -214,8 +215,8 @@ class Mate(FloatLayout):
         self.show_details_popup()
 
     def show_details_popup(self):
-        ''' open an InfoPopup that shows all the details about the character '''
-        popup = InfoPopup(self)
+        ''' open an MateInfoPopup that shows all the details about the character '''
+        popup = MateInfoPopup(self)
         popup.open()
 
     def create_status_effect(self, ability, source):
@@ -639,7 +640,18 @@ class LevelUpPopup(Popup):
         self.ability = ability
         self.add_widget(LevelUpLayout(ability, self))
 
-class InfoPopup(Popup):
+class AbilityInfoPopup(Popup):
+    ''' a Popup showing some information about the Ability '''
+    manacost_label = StringProperty()
+    info_label = StringProperty()
+    time_usage = StringProperty()
+    def __init__(self, ability, **kwargs):
+        super().__init__(**kwargs)
+        self.manacost_label = f'manacost: {ability.manacost}'
+        self.info_label = ability.info.upper()
+        self.time_usage = ability.time_usage
+
+class MateInfoPopup(Popup):
     ''' a Popup showing some information about the Mate '''
     team_label = StringProperty()
     health_label = StringProperty()
@@ -788,6 +800,8 @@ class AbilityPrompt(RelativeLayout):
     name = StringProperty()
     manacost_label = StringProperty()
     info_label = StringProperty()
+    ability_info_popup = None
+    popup_event = None
     def __init__(self, source, ability, **kwargs):
         super().__init__(**kwargs)
         self.ability = ability
@@ -795,7 +809,12 @@ class AbilityPrompt(RelativeLayout):
         self.source = source
         self.manacost_label = 'manacost: ' + str(self.ability.manacost)
         self.info_label = 'some info about the ability'
+    def ap_on_press(self):
+        self.ability_info_popup = AbilityInfoPopup(self.ability)
+        self.popup_event = Clock.schedule_once(self.ability_info_popup.open, timeout = 0.5)
     def ap_on_release(self):
+        self.popup_event.cancel()
+        self.ability_info_popup.dismiss()
         self.source.start_ability(self.ability)
 
 class PlayingField(GridLayout):
@@ -817,20 +836,20 @@ class PlayingField(GridLayout):
             self.add_widget(EmptyField())
 
         if game_mode == 'tutorial basic movement':
-            self.create_mate(1, ['rookie charge', 'bishop charge', 'knights move'], 'axe', 24)
-            self.children[24].armor = self.children[24].max_armor
+            self.create_mate(1, ['rookie charge', 'bishop charge', 'knights move'], 'axe', 3*cols+3)
+            self.children[3*cols+3].armor = self.children[3*cols+3].max_armor
         elif game_mode == 'tutorial basic attacking':
-            self.create_mate(1, ['pierce attack', 'invigorate', 'sacrificial attack'], 'axe', 17)
-            self.create_mate(2, [], 'axe', 31)
-            self.children[31].health_regen = 0.4
-            self.children[31].armor = self.children[31].max_armor
+            self.create_mate(1, ['pierce attack', 'invigorate', 'sacrificial attack'], 'axe', 3*cols+3)
+            self.create_mate(2, [], 'axe', 4*cols+3)
+            self.children[4*cols+3].health_regen = 0.4
+            self.children[4*cols+3].armor = self.children[4*cols+3].max_armor
         elif game_mode == 'tutorial shields':
-            self.create_mate(1, ['shield raise', 'shield breaker'], 'axe and buckler', 17)
-            self.children[17].t = 90
-            self.create_mate(1, ['heal'], 'spear', 10)
-            self.children[10].t = 40
-            self.create_mate(2, [], 'sword and shield', 24)
-            self.children[24].t = 70
+            self.create_mate(1, ['shield raise', 'shield breaker'], 'axe and buckler', 2*cols+3)
+            self.children[2*cols+3].t = 90
+            self.create_mate(1, ['heal'], 'spear', cols+3)
+            self.children[cols+3].t = 40
+            self.create_mate(2, [], 'sword and shield', 4*cols+3)
+            self.children[4*cols+3].t = 70
         elif game_mode == 'tutorial weapons':
             self.create_mate(1, ['axe pull'], 'axe', 2)
             self.children[2].t = 10
@@ -838,21 +857,21 @@ class PlayingField(GridLayout):
             self.children[3].t = 70
             self.create_mate(1, ['heal'], 'longsword', 4)
             self.children[4].t = 80
-            self.create_mate(2, [], 'magic staff', 45)
-            self.create_mate(2, ['stab back'], 'spear', 38)
-            self.create_mate(2, [], 'sword and shield', 31)
+            self.create_mate(2, [], 'magic staff', 6*cols+3)
+            self.create_mate(2, ['stab back'], 'spear', 5*cols+3)
+            self.create_mate(2, [], 'sword and shield', 4*cols+3)
         elif game_mode == 'tutorial abilities':
-            self.create_mate(1, ['axe pull'], 'axe', 2)
+            self.create_mate(1, ['axe pull'], 'axe', 3)
         elif game_mode == 'standard':
             self.create_mate(1, ['rookie charge', 'axe pull', 'invigorate'], 'axe', 1)
             self.create_mate(1, ['shield raise', 'heal', 'cleanse'], 'sword and shield', 2)
             self.create_mate(1, ['summon zombie', 'summon ghost', 'freeze'], 'magic staff', 4)
             self.create_mate(1, ['multishot', 'pierce attack', 'knights move'], 'bow', 5)
 
-            self.create_mate(2, ['pierce attack', 'sacrificial attack', 'bishop charge'], 'longsword', 47)
-            self.create_mate(2, ['stab back', 'quick attack', 'double attack'], 'spear', 46)
-            self.create_mate(2, ['pierce attack', 'sacrificial attack', 'purge'], 'axe and buckler', 44)
-            self.create_mate(2, ['manaburn', 'burn', 'summon golem'], 'wand and buckler', 43)
+            self.create_mate(2, ['pierce attack', 'sacrificial attack', 'bishop charge'], 'longsword', cols**2-2)
+            self.create_mate(2, ['stab back', 'quick attack', 'double attack'], 'spear', cols**2-3)
+            self.create_mate(2, ['pierce attack', 'sacrificial attack', 'purge'], 'axe and buckler', cols**2-5)
+            self.create_mate(2, ['manaburn', 'burn', 'summon golem'], 'wand and buckler', cols**2-6)
         elif game_mode == 'sandbox':
             self.create_mate(1, ['stab back', 'rookie charge'], 'axe', 1)
             self.create_mate(2, ['stab back', 'rookie charge'], 'axe', 2)

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07, custom)"
+   sodipodi:docname="icons.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="-492.58396"
+     inkscape:cy="221.16213"
+     inkscape:document-units="mm"
+     inkscape:current-layer="g836"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1028"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g836"
+       transform="translate(195.99318,150.4211)">
+      <rect
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5"
+         id="rect851"
+         width="100"
+         height="100"
+         x="-368.04083"
+         y="-198.3215"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/half_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         id="path834"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000002;stroke-width:2.00001"
+         inkscape:transform-center-x="7.7079156e-06"
+         inkscape:transform-center-y="-8.1602635"
+         d="m -346.30884,-182.32146 20.19618,34.98081 -20.19618,34.98082 h 56.53608 l -20.19618,-34.98082 20.19618,-34.98081 z"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/half_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         sodipodi:type="star"
+         style="fill:#000000;fill-opacity:1;stroke:#000002;stroke-width:2"
+         id="path854"
+         sodipodi:sides="3"
+         sodipodi:cx="-318.04087"
+         sodipodi:cy="-128.11425"
+         sodipodi:r1="18.207258"
+         sodipodi:r2="9.1036301"
+         sodipodi:arg1="0.52359878"
+         sodipodi:arg2="1.5707963"
+         inkscape:flatsided="true"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m -302.27291,-119.01061 -31.5359,0 15.76795,-27.31089 z"
+         inkscape:transform-center-y="-4.5518054"
+         inkscape:transform-center-x="2.2074337e-06"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/half_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000002;stroke-width:2"
+         id="path854-6"
+         sodipodi:sides="3"
+         sodipodi:cx="-318.04087"
+         sodipodi:cy="166.21788"
+         sodipodi:r1="18.207258"
+         sodipodi:r2="9.1036301"
+         sodipodi:arg1="0.52359878"
+         sodipodi:arg2="1.5707963"
+         inkscape:flatsided="true"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m -302.27291,175.32151 -31.5359,0 15.76795,-27.31089 z"
+         inkscape:transform-center-y="4.5518044"
+         inkscape:transform-center-x="2.2074337e-06"
+         transform="scale(1,-1)"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/half_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         sodipodi:type="star"
+         style="fill:#000000;fill-opacity:1;stroke:#000002;stroke-width:2"
+         id="path854-6-7"
+         sodipodi:sides="3"
+         sodipodi:cx="-318.04087"
+         sodipodi:cy="159.00101"
+         sodipodi:r1="10.990381"
+         sodipodi:r2="5.4951911"
+         sodipodi:arg1="0.52359878"
+         sodipodi:arg2="1.5707963"
+         inkscape:flatsided="true"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m -308.52291,164.4962 -19.0359,0 9.51795,-16.48557 z"
+         inkscape:transform-center-y="2.747581"
+         inkscape:transform-center-x="1.3455606e-06"
+         transform="scale(1,-1)"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/half_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000002;stroke-width:2"
+         id="path854-6-7-3"
+         sodipodi:sides="3"
+         sodipodi:cx="-318.04087"
+         sodipodi:cy="-135.33113"
+         sodipodi:r1="10.990381"
+         sodipodi:r2="5.4951911"
+         sodipodi:arg1="0.52359878"
+         sodipodi:arg2="1.5707963"
+         inkscape:flatsided="true"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m -308.52291,-129.83594 -19.0359,0 9.51795,-16.48557 z"
+         inkscape:transform-center-y="-2.7475857"
+         inkscape:transform-center-x="1.3455606e-06"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/half_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <rect
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5"
+         id="rect851-5"
+         width="100"
+         height="100"
+         x="-366.19614"
+         y="-83.099892"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/full_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         id="path834-6"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000002;stroke-width:2.00001"
+         inkscape:transform-center-x="7.7079156e-06"
+         inkscape:transform-center-y="-8.1602635"
+         d="m -344.46416,-67.099855 20.19618,34.980813 -20.19618,34.9808187 h 56.53608 l -20.19618,-34.9808187 20.19618,-34.980813 z"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/full_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ffffff;fill-opacity:1;stroke:#000002;stroke-width:2"
+         id="path854-2"
+         sodipodi:sides="3"
+         sodipodi:cx="-316.19618"
+         sodipodi:cy="-12.892632"
+         sodipodi:r1="18.207258"
+         sodipodi:r2="9.1036301"
+         sodipodi:arg1="0.52359878"
+         sodipodi:arg2="1.5707963"
+         inkscape:flatsided="true"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m -300.42822,-3.7890023 -31.5359,-2e-7 15.76795,-27.3108875 z"
+         inkscape:transform-center-y="-4.5518054"
+         inkscape:transform-center-x="2.2074337e-06"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/full_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+      <path
+         sodipodi:type="star"
+         style="fill:#000000;fill-opacity:1;stroke:#000002;stroke-width:2"
+         id="path854-6-9"
+         sodipodi:sides="3"
+         sodipodi:cx="-316.19618"
+         sodipodi:cy="50.996278"
+         sodipodi:r1="18.207258"
+         sodipodi:r2="9.1036301"
+         sodipodi:arg1="0.52359878"
+         sodipodi:arg2="1.5707963"
+         inkscape:flatsided="true"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m -300.42822,60.099906 -31.5359,0 15.76795,-27.310887 z"
+         inkscape:transform-center-y="4.5518044"
+         inkscape:transform-center-x="2.2074337e-06"
+         transform="scale(1,-1)"
+         inkscape:export-filename="/home/sven/data/game_programming/magic_mates/gfx/icons/full_time.png"
+         inkscape:export-xdpi="88"
+         inkscape:export-ydpi="88" />
+    </g>
+  </g>
+</svg>

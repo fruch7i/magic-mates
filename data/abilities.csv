@@ -1,42 +1,42 @@
-	manacost	target type	reach	time usage
-move	0	move	axe	half
-shield raise	30	ally	self	full
-shield bash	30	enemy	sword and shield	full
-stab back	30	enemy	spear	full
-powershot	30	enemy	bow	full
-multishot	30	all enemies	bow	full
-knights move	20	move	knight	half
-teleport	50	move	infinite	full
-summon zombie	50	summon	axe	full
-summon golem	50	summon	axe	full
-summon ghost	50	summon	axe	full
-summon vampire	50	summon	axe	full
-summon shadow	100	summon	axe	full
-pass	0	self	self	half
-attack	0	enemy	weapon	full
-pierce attack	40	enemy	weapon	full
-axe pull	30	enemy	weapon	full
-shield breaker	40	enemy	weapon	full
-rookie charge	20	move	rook	full
-bishop charge	20	move	bishop	full
-mana strike	0	enemy	weapon	full
-quick attack	30	enemy	weapon	half
-double attack	60	enemy	weapon	full
-knights attack	20	enemy	knight	full
-freeze	30	enemy	infinite	full
-electrocute	30	enemy	infinite	full
-burn	30	enemy	infinite	full
-manaburn	30	enemy	infinite	full
-poison	30	enemy	infinite	full
-cleanse	20	ally	infinite	full
-purge	20	enemy	infinite	full
-invigorate	40	ally	infinite	full
-heal	40	ally	infinite	full
-health gift	25	ally	infinite	full
-mana gift	30	ally	infinite	full
-morale raise	30	ally	infinite	full
-regenerate	40	ally	infinite	full
-novices thunder	50	enemy	infinite	full
-vampiric bite	30	enemy	weapon	full
-sacrificial attack	0	enemy	weapon	full
-stun	40	enemy	infinite	full
+	manacost	target type	reach	time usage	info
+move	0	move	axe	half	move the mate to adjacent square
+shield raise	30	ally	self	full	increase damage blocked by shield
+shield bash	30	enemy	sword and shield	full	push enemy back with the shield
+stab back	30	enemy	spear	full	push enemy back with the spear
+powershot	30	enemy	bow	full	push enemy back with the bow
+multishot	30	all enemies	bow	full	attack all enemies in bow reach
+knights move	20	move	knight	half	move like a knight in chess
+teleport	50	move	infinite	full	teleport to any square
+summon zombie	50	summon	axe	full	zombies are easy to summon but weak
+summon golem	50	summon	axe	full	golems are hard to kill
+summon ghost	50	summon	axe	full	ghosts can gift their health and mana to allies
+summon vampire	50	summon	axe	full	vampires can heal and sacrifice health for stronger attacks
+summon shadow	100	summon	axe	full	shadows are weaker clones of mates that share their abilities
+pass	0	self	self	half	pass your turn for some mana
+attack	0	enemy	weapon	full	attack enemies within weapon attack range
+pierce attack	40	enemy	weapon	full	ignores armor
+axe pull	30	enemy	weapon	full	switch position with your target before attacking
+shield breaker	40	enemy	weapon	full	reduce damage blocked by enemies shield
+rookie charge	20	move	rook	full	move like a rook in chess
+bishop charge	20	move	bishop	full	move like a bishop in chess
+mana strike	0	enemy	weapon	full	convert all mana to attack damage
+quick attack	30	enemy	weapon	half	weak attack using a half turn
+double attack	60	enemy	weapon	full	two weaker attacks on a single target
+knights attack	20	enemy	knight	full	attack with the range of a knight
+freeze	30	enemy	infinite	full	destroy enemies time bar and increase time needed for turn
+electrocute	30	enemy	infinite	full	deals strong damage while granting time
+burn	30	enemy	infinite	full	deals damage over time
+manaburn	30	enemy	infinite	full	destroy enemies mana and burn mana over time
+poison	30	enemy	infinite	full	applies all regeneration as damage instead
+cleanse	20	ally	infinite	full	remove negative status effect from ally
+purge	20	enemy	infinite	full	remove positive status effect from enemy
+invigorate	40	ally	infinite	full	strengthen the next attack of target ally
+heal	40	ally	infinite	full	heal ally
+health gift	25	ally	infinite	full	grant health to ally at cost of own health
+mana gift	30	ally	infinite	full	grant mana to ally at cost of own mana
+morale raise	30	ally	infinite	full	grant time to ally
+regenerate	40	ally	infinite	full	increases target allies health regeneration
+novices thunder	50	enemy	infinite	full	weak attack early on – drastically scaling with experience
+vampiric bite	30	enemy	weapon	full	steals life based on attack damage
+sacrificial attack	0	enemy	weapon	full	deals bonus damage at cost of own health
+stun	40	enemy	infinite	full	reverse time gains on target enemy

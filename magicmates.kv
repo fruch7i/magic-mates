@@ -4,6 +4,15 @@
 
 <Label>:
 	font_size: 25
+	_scale: 1. if self.texture_size[0] < self.width else float(self.width) / (self.texture_size[0]+1)
+	canvas.before:
+		PushMatrix
+		Scale:
+			origin: self.center
+			x: self._scale or 1.
+			y: self._scale or 1.
+	canvas.after:
+		PopMatrix
 
 <TutorialSelectScreen>:
 	BoxLayout:
@@ -39,7 +48,7 @@
 			text: 'New Match'
 			on_release: root.start_game('standard')
 		Button:
-			text: 'Sandbox'
+			text: 'Sandbox (for devs and bugfixing only)'
 			on_release: root.start_game('sandbox')
 		Button:
 			text: 'Tutorial'
@@ -67,6 +76,7 @@
 	BoxLayout:
 		orientation: 'horizontal'
 		Button:
+			on_press: root.ap_on_press()
 			on_release: root.ap_on_release()
 			text: root.name
 		Label:
@@ -106,8 +116,22 @@
 			text: 'continue'
 			on_release: root.dismiss()
 
-<InfoPopup>:
-	title: 'Character information'
+<AbilityInfoPopup>:
+	title: 'Ability information'
+	size_hint: None, 0.9
+	width: self.height
+	pos_hint: {'x': 0., 'y': 0.}
+	BoxLayout:
+		orientation: 'vertical'
+		Label:
+			text: root.info_label
+		Label:
+			text: root.manacost_label
+		Image:
+			source: 'gfx/icons/half_time.png' if root.time_usage == 'half' else 'gfx/icons/full_time.png'
+
+<MateInfoPopup>:
+	title: 'Mate information'
 	BoxLayout:
 		orientation: 'vertical'
 		BoxLayout:
@@ -141,30 +165,52 @@
 		Color:
 			rgba: (0.8, 0, 0, 1)
 		Rectangle:
-			pos: (self.x, self.y + self.height - 6)
-			size: (self.size[0] * self.health / self.max_health, 6)
+			pos: (self.x, self.y + self.height - 0.05 * self.height)
+			size: (self.size[0] * self.health / self.max_health, 0.05 * self.height)
 		Color:
 			rgba: (0, 0.7, 0, 1) 
 		Rectangle:
-			pos: (self.x, self.y + self.height - 12)
-			size: (self.size[0] * self.armor / self.max_armor, 6)
+			pos: (self.x, self.y + self.height - 0.1 * self.height)
+			size: (self.size[0] * self.armor / self.max_armor, 0.05 * self.height)
 		Color:
 			rgba: (0, 0, 0.9, 1)
 
 		Rectangle:
-			pos: (self.x, self.y + self.height - 18)
-			size: (self.size[0] * self.mana / self.max_mana, 6)
+			pos: (self.x, self.y + self.height - 0.15 * self.height)
+			size: (self.size[0] * self.mana / self.max_mana, 0.05 *  self.height)
 		Color:
 			rgba: (1., 1., 1., 1) if self.t < self.max_t else (0.8, 0.8, 0., 1)
 		Rectangle:
-			pos: (self.x, self.y + self.height - 24)
-			size: (self.size[0] * self.t / self.max_t, 6)
+			pos: (self.x, self.y + self.height - 0.2 * self.height)
+			size: (self.size[0] * self.t / self.max_t, 0.05 * self.height)
 	Button:
 		background_normal: root.button_normal_path
-		pos: (root.x+2, root.y+2)
+		pos: (root.x+0.2*root.width, root.y)
 		size_hint: (None, None)
-		size: (root.width-4, root.height-26)
+		size: (0.8*root.width, 0.8*root.height)
 		on_release: root.ma_on_release()
+	Image:
+		source: 'gfx/status_effects/more.png'
+		pos: (root.x, root.y)
+		size_hint: (None, None)
+		size: (0.2*root.width, 0.2*root.height)
+		allow_stretch: True
+	Image:
+		source: 'gfx/status_effects/more.png'
+		pos: (root.x, root.y+0.2*root.height)
+		size_hint: (None, None)
+		size: (0.2*root.width, 0.2*root.height)
+		allow_stretch: True
+	Image:
+		source: 'gfx/status_effects/more.png'
+		pos: (root.x, root.y+0.4*root.height)
+		size_hint: (None, None)
+		size: (0.2*root.width, 0.2*root.height)
+	Image:
+		source: 'gfx/status_effects/more.png'
+		pos: (root.x, root.y+0.6*root.height)
+		size_hint: (None, None)
+		size: (0.2*root.width, 0.2*root.height)
 
 <MagicMatesGame>:
 	orientation: 'horizontal'
